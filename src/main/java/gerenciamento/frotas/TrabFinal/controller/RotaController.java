@@ -9,6 +9,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -33,12 +35,20 @@ public class RotaController {
         return ResponseEntity.status(201).body(rotaService.criarComGps(origem, destino));
     }
 
-    // Retorna Map<String, Object> — Jackson serializa corretamente como JSON
+    // Retorna info da rota (distância, tempo, provedor)
     @GetMapping("/gps/consultar")
     public ResponseEntity<Map<String, Object>> consultarGps(
             @RequestParam String origem,
             @RequestParam String destino) {
         return ResponseEntity.ok(rotaService.obterRotaGps(origem, destino));
+    }
+
+    // Retorna geometria real da rota (lista de coordenadas [lat, lon])
+    @GetMapping("/gps/geometria")
+    public ResponseEntity<List<double[]>> obterGeometria(
+            @RequestParam String origem,
+            @RequestParam String destino) {
+        return ResponseEntity.ok(rotaService.obterGeometriaRota(origem, destino));
     }
 
     @GetMapping

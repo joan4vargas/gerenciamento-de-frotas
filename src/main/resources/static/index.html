@@ -11,44 +11,101 @@
                display: flex; align-items: center; justify-content: center; }
         .card { border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
         .logo { font-size: 3rem; color: #2e7d32; }
+        .nav-tabs .nav-link { color: #2e7d32; }
+        .nav-tabs .nav-link.active { color: #fff; background: #2e7d32; border-color: #2e7d32; }
     </style>
 </head>
 <body>
-<div class="container" style="max-width:420px">
+<div class="container" style="max-width:440px">
     <div class="card p-4">
         <div class="text-center mb-4">
             <i class="bi bi-truck logo"></i>
             <h4 class="mt-2 fw-bold text-success">Sistema de Frotas</h4>
             <p class="text-muted small">Gerenciamento de Veículos e Rotas</p>
         </div>
-        <div id="alerta" class="alert alert-danger d-none"></div>
-        <div class="mb-3">
-            <label class="form-label fw-semibold">Email</label>
-            <input type="email" id="email" class="form-control" placeholder="seu@email.com">
+
+        <!-- Abas Login / Cadastro -->
+        <ul class="nav nav-tabs mb-3" id="abas">
+            <li class="nav-item w-50">
+                <button class="nav-link active w-100" onclick="mostrarAba('login')">
+                    <i class="bi bi-box-arrow-in-right me-1"></i>Entrar
+                </button>
+            </li>
+            <li class="nav-item w-50">
+                <button class="nav-link w-100" onclick="mostrarAba('cadastro')">
+                    <i class="bi bi-person-plus me-1"></i>Cadastrar
+                </button>
+            </li>
+        </ul>
+
+        <div id="alertaLogin" class="alert alert-danger d-none"></div>
+        <div id="alertaCadastro" class="alert d-none"></div>
+
+        <!-- Formulário Login -->
+        <div id="abaLogin">
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Email</label>
+                <input type="email" id="email" class="form-control" placeholder="seu@email.com">
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Senha</label>
+                <input type="password" id="senha" class="form-control" placeholder="••••••">
+            </div>
+            <button onclick="login()" class="btn btn-success w-100 fw-bold">
+                <i class="bi bi-box-arrow-in-right me-2"></i>Entrar
+            </button>
         </div>
-        <div class="mb-3">
-            <label class="form-label fw-semibold">Senha</label>
-            <input type="password" id="senha" class="form-control" placeholder="••••••">
+
+        <!-- Formulário Cadastro -->
+        <div id="abaCadastro" class="d-none">
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Nome completo</label>
+                <input type="text" id="cadNome" class="form-control" placeholder="Seu nome">
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Email</label>
+                <input type="email" id="cadEmail" class="form-control" placeholder="seu@email.com">
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Senha</label>
+                <input type="password" id="cadSenha" class="form-control" placeholder="Mínimo 6 caracteres">
+                <div class="form-text">A senha deve ter pelo menos 6 caracteres.</div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Confirmar senha</label>
+                <input type="password" id="cadConfirmar" class="form-control" placeholder="Repita a senha">
+            </div>
+            <button onclick="cadastrar()" class="btn btn-success w-100 fw-bold">
+                <i class="bi bi-person-check me-2"></i>Criar Conta
+            </button>
         </div>
-        <button onclick="login()" class="btn btn-success w-100 fw-bold">
-            <i class="bi bi-box-arrow-in-right me-2"></i>Entrar
-        </button>
-        <hr>
-        <p class="text-center text-muted small mb-0">
-            Não tem conta?
-            <a href="#" onclick="criarContaDemo()">Criar conta demo</a>
-        </p>
     </div>
 </div>
 
 <script>
     if (localStorage.getItem('token')) window.location.href = '/dashboard.html';
 
+    function mostrarAba(aba) {
+        document.getElementById('abaLogin').classList.toggle('d-none', aba !== 'login');
+        document.getElementById('abaCadastro').classList.toggle('d-none', aba !== 'cadastro');
+        document.querySelectorAll('#abas .nav-link').forEach((el, i) => {
+            el.classList.toggle('active', (i === 0 && aba === 'login') || (i === 1 && aba === 'cadastro'));
+        });
+        document.getElementById('alertaLogin').classList.add('d-none');
+        document.getElementById('alertaCadastro').classList.add('d-none');
+    }
+
     async function login() {
         const email = document.getElementById('email').value;
         const senha = document.getElementById('senha').value;
-        const alerta = document.getElementById('alerta');
+        const alerta = document.getElementById('alertaLogin');
         alerta.classList.add('d-none');
+
+        if (!email || !senha) {
+            alerta.textContent = 'Preencha email e senha.';
+            alerta.classList.remove('d-none');
+            return;
+        }
 
         try {
             const res = await fetch('http://localhost:8080/api/auth/login', {
@@ -69,28 +126,55 @@
         }
     }
 
-    async function criarContaDemo() {
+    async function cadastrar() {
+        const nome = document.getElementById('cadNome').value.trim();
+        const email = document.getElementById('cadEmail').value.trim();
+        const senha = document.getElementById('cadSenha').value;
+        const confirmar = document.getElementById('cadConfirmar').value;
+        const alerta = document.getElementById('alertaCadastro');
+
+        alerta.className = 'alert d-none';
+
+        if (!nome || !email || !senha) {
+            alerta.textContent = 'Preencha todos os campos.';
+            alerta.className = 'alert alert-danger';
+            return;
+        }
+        if (senha.length < 6) {
+            alerta.textContent = 'A senha deve ter pelo menos 6 caracteres.';
+            alerta.className = 'alert alert-danger';
+            return;
+        }
+        if (senha !== confirmar) {
+            alerta.textContent = 'As senhas não coincidem.';
+            alerta.className = 'alert alert-danger';
+            return;
+        }
+
         try {
-            await fetch('http://localhost:8080/api/usuarios', {
+            const res = await fetch('http://localhost:8080/api/usuarios', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    nome: 'Administrador',
-                    email: 'admin@frotas.com',
-                    senha: '123456',
-                    tipo: 'ROLE_ADMIN'
-                })
+                body: JSON.stringify({ nome, email, senha, tipo: 'ROLE_USER' })
             });
-            document.getElementById('email').value = 'admin@frotas.com';
-            document.getElementById('senha').value = '123456';
-            alert('Conta criada! Clique em Entrar.');
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.erro || 'Erro ao cadastrar');
+            }
+            alerta.textContent = '✅ Conta criada! Faça login para entrar.';
+            alerta.className = 'alert alert-success';
+            setTimeout(() => mostrarAba('login'), 2000);
         } catch (e) {
-            alert('Conta já existe. Use: admin@frotas.com / 123456');
+            alerta.textContent = e.message;
+            alerta.className = 'alert alert-danger';
         }
     }
 
     document.addEventListener('keypress', e => {
-        if (e.key === 'Enter') login();
+        if (e.key === 'Enter') {
+            const abaAtiva = document.getElementById('abaLogin').classList.contains('d-none');
+            abaAtiva ? cadastrar() : login();
+        }
     });
 </script>
 </body>

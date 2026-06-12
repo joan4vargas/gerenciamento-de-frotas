@@ -9,6 +9,8 @@ import gerenciamento.frotas.TrabFinal.repository.MotoristaRepository;
 import gerenciamento.frotas.TrabFinal.repository.VeiculoRepository;
 import gerenciamento.frotas.TrabFinal.repository.ViagemRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.io.ByteArrayOutputStream;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -31,6 +33,7 @@ public class RelatorioPdfService {
         this.motoristaRepository = motoristaRepository;
     }
 
+    @Transactional(readOnly = true)
     public byte[] gerarRelatorioViagens() throws Exception {
         List<Viagem> viagens = viagemRepository.findAll();
         Document doc = new Document(PageSize.A4.rotate());
@@ -38,14 +41,12 @@ public class RelatorioPdfService {
         PdfWriter.getInstance(doc, out);
         doc.open();
 
-        // Título
         Font tituloFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16, BaseColor.DARK_GRAY);
         Paragraph titulo = new Paragraph("Relatório de Viagens - Sistema de Frotas", tituloFont);
         titulo.setAlignment(Element.ALIGN_CENTER);
         titulo.setSpacingAfter(20);
         doc.add(titulo);
 
-        // Data geração
         Font subFont = FontFactory.getFont(FontFactory.HELVETICA, 10, BaseColor.GRAY);
         Paragraph data = new Paragraph("Gerado em: " +
                 java.time.LocalDateTime.now().format(FMT), subFont);
@@ -53,12 +54,10 @@ public class RelatorioPdfService {
         data.setSpacingAfter(15);
         doc.add(data);
 
-        // Tabela
         PdfPTable tabela = new PdfPTable(7);
         tabela.setWidthPercentage(100);
         tabela.setWidths(new float[]{1f, 2f, 2f, 2f, 2f, 1.5f, 1.5f});
 
-        // Cabeçalho
         String[] cabecalhos = {"ID", "Veículo", "Motorista", "Origem", "Destino",
                 "Custo (R$)", "Status"};
         Font cabFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10, BaseColor.WHITE);
@@ -70,7 +69,6 @@ public class RelatorioPdfService {
             tabela.addCell(cell);
         }
 
-        // Dados
         Font dadoFont = FontFactory.getFont(FontFactory.HELVETICA, 9);
         boolean linha = false;
         for (Viagem v : viagens) {
@@ -88,7 +86,6 @@ public class RelatorioPdfService {
 
         doc.add(tabela);
 
-        // Totais
         double totalCusto = viagens.stream()
                 .filter(v -> v.getCustoCalculado() != null)
                 .mapToDouble(Viagem::getCustoCalculado).sum();
@@ -98,13 +95,13 @@ public class RelatorioPdfService {
         Font totalFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11);
         doc.add(new Paragraph("Total de viagens: " + viagens.size(), totalFont));
         doc.add(new Paragraph("Viagens finalizadas: " + totalFinalizadas, totalFont));
-        doc.add(new Paragraph(
-                String.format("Custo total: R$ %.2f", totalCusto), totalFont));
+        doc.add(new Paragraph(String.format("Custo total: R$ %.2f", totalCusto), totalFont));
 
         doc.close();
         return out.toByteArray();
     }
 
+    @Transactional(readOnly = true)
     public byte[] gerarRelatorioVeiculos() throws Exception {
         List<Veiculo> veiculos = veiculoRepository.findAll();
         Document doc = new Document(PageSize.A4);
@@ -117,6 +114,13 @@ public class RelatorioPdfService {
         titulo.setAlignment(Element.ALIGN_CENTER);
         titulo.setSpacingAfter(20);
         doc.add(titulo);
+
+        Font subFont = FontFactory.getFont(FontFactory.HELVETICA, 10, BaseColor.GRAY);
+        Paragraph dataGeracao = new Paragraph("Gerado em: " +
+                java.time.LocalDateTime.now().format(FMT), subFont);
+        dataGeracao.setAlignment(Element.ALIGN_RIGHT);
+        dataGeracao.setSpacingAfter(15);
+        doc.add(dataGeracao);
 
         PdfPTable tabela = new PdfPTable(5);
         tabela.setWidthPercentage(100);
@@ -144,10 +148,16 @@ public class RelatorioPdfService {
         }
 
         doc.add(tabela);
+
+        doc.add(new Paragraph(" "));
+        Font totalFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11);
+        doc.add(new Paragraph("Total de veículos: " + veiculos.size(), totalFont));
+
         doc.close();
         return out.toByteArray();
     }
 
+    @Transactional(readOnly = true)
     public byte[] gerarRelatorioMotoristas() throws Exception {
         List<Motorista> motoristas = motoristaRepository.findAll();
         Document doc = new Document(PageSize.A4);
@@ -160,6 +170,13 @@ public class RelatorioPdfService {
         titulo.setAlignment(Element.ALIGN_CENTER);
         titulo.setSpacingAfter(20);
         doc.add(titulo);
+
+        Font subFont = FontFactory.getFont(FontFactory.HELVETICA, 10, BaseColor.GRAY);
+        Paragraph dataGeracao = new Paragraph("Gerado em: " +
+                java.time.LocalDateTime.now().format(FMT), subFont);
+        dataGeracao.setAlignment(Element.ALIGN_RIGHT);
+        dataGeracao.setSpacingAfter(15);
+        doc.add(dataGeracao);
 
         PdfPTable tabela = new PdfPTable(5);
         tabela.setWidthPercentage(100);
@@ -187,12 +204,17 @@ public class RelatorioPdfService {
         }
 
         doc.add(tabela);
+
+        doc.add(new Paragraph(" "));
+        Font totalFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11);
+        doc.add(new Paragraph("Total de motoristas: " + motoristas.size(), totalFont));
+
         doc.close();
         return out.toByteArray();
     }
 
     private void addCell(PdfPTable tabela, String texto, Font font, BaseColor cor) {
-        PdfPCell cell = new PdfPCell(new Phrase(texto, font));
+        PdfPCell cell = new PdfPCell(new Phrase(texto != null ? texto : "", font));
         cell.setBackgroundColor(cor);
         cell.setPadding(5);
         tabela.addCell(cell);

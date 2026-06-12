@@ -535,12 +535,10 @@ Token expira em: **24 horas**
 
 | Nome | Responsabilidade |
 |------|-----------------|
-| Integrante 1 | Backend — Entidades JPA, Repositories, Services |
-| Integrante 2 | Padrões GoF — Factory, Adapter GPS, Observer |
-| Integrante 3 | Padrões GoF — Facade, Strategy, Segurança JWT |
-| Integrante 4 | Frontend — Dashboard, Veículos, Motoristas |
-| Integrante 5 | Frontend — Rotas, Viagens, Relatórios PDF/Excel |
-
+| Integrante 1 | Backend — Entidades JPA, Repositories, Services, Segurança JWT |
+| Integrante 2 | Padrões GoF — Factory, Adapter GPS, Observer, Facade, Strategy |
+| Integrante 3 | Frontend — Dashboard, Mapa Leaflet/CARTO, Veículos, Motoristas |
+| Integrante 4 | Frontend — Rotas, Viagens, Relatórios PDF/Excel, Integração GPS |
 ---
 
 ## 📊 Banco de Dados

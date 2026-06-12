@@ -9,6 +9,8 @@ import gerenciamento.frotas.TrabFinal.repository.ViagemRepository;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.io.ByteArrayOutputStream;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -31,13 +33,13 @@ public class RelatorioExcelService {
         this.motoristaRepository = motoristaRepository;
     }
 
+    @Transactional(readOnly = true)
     public byte[] gerarRelatorioViagens() throws Exception {
         List<Viagem> viagens = viagemRepository.findAll();
 
         try (XSSFWorkbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("Viagens");
 
-            // Estilo cabeçalho
             CellStyle cabStyle = workbook.createCellStyle();
             cabStyle.setFillForegroundColor(IndexedColors.GREEN.getIndex());
             cabStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
@@ -46,7 +48,6 @@ public class RelatorioExcelService {
             cabFont.setColor(IndexedColors.WHITE.getIndex());
             cabStyle.setFont(cabFont);
 
-            // Cabeçalho
             Row cab = sheet.createRow(0);
             String[] colunas = {"ID", "Veículo (Placa)", "Motorista", "Origem",
                     "Destino", "Distância (km)", "Partida",
@@ -57,7 +58,6 @@ public class RelatorioExcelService {
                 cell.setCellStyle(cabStyle);
             }
 
-            // Dados
             int rowNum = 1;
             for (Viagem v : viagens) {
                 Row row = sheet.createRow(rowNum++);
@@ -75,7 +75,6 @@ public class RelatorioExcelService {
                         v.getStatusViagem() ? "Finalizada" : "Em andamento");
             }
 
-            // Auto-size
             for (int i = 0; i < colunas.length; i++) sheet.autoSizeColumn(i);
 
             // Aba de resumo
@@ -85,8 +84,11 @@ public class RelatorioExcelService {
             resumo.createRow(1).createCell(0).setCellValue("Finalizadas");
             resumo.getRow(1).createCell(1)
                     .setCellValue(viagens.stream().filter(Viagem::getStatusViagem).count());
-            resumo.createRow(2).createCell(0).setCellValue("Custo Total (R$)");
-            resumo.getRow(2).createCell(1).setCellValue(
+            resumo.createRow(2).createCell(0).setCellValue("Em Andamento");
+            resumo.getRow(2).createCell(1)
+                    .setCellValue(viagens.stream().filter(v -> !v.getStatusViagem()).count());
+            resumo.createRow(3).createCell(0).setCellValue("Custo Total (R$)");
+            resumo.getRow(3).createCell(1).setCellValue(
                     viagens.stream().filter(v -> v.getCustoCalculado() != null)
                             .mapToDouble(Viagem::getCustoCalculado).sum());
 
@@ -96,6 +98,7 @@ public class RelatorioExcelService {
         }
     }
 
+    @Transactional(readOnly = true)
     public byte[] gerarRelatorioVeiculos() throws Exception {
         List<Veiculo> veiculos = veiculoRepository.findAll();
 
@@ -139,6 +142,7 @@ public class RelatorioExcelService {
         }
     }
 
+    @Transactional(readOnly = true)
     public byte[] gerarRelatorioMotoristas() throws Exception {
         List<Motorista> motoristas = motoristaRepository.findAll();
 

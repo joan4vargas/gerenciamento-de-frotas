@@ -42,7 +42,25 @@ function mostrarErros(campos) {
         }
     });
 }
-
+async function baixarRelatorio(path, nomeArquivo) {
+    try {
+        const res = await fetch('http://localhost:8080' + path, {
+            headers: { 'Authorization': 'Bearer ' + getToken() }
+        });
+        if (!res.ok) throw new Error('Erro ao gerar relatório (status ' + res.status + ')');
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = nomeArquivo;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+    } catch (e) {
+        alert('Erro ao baixar: ' + e.message);
+    }
+}
 // Limpa todos os erros do formulário
 function limparErros() {
     document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
