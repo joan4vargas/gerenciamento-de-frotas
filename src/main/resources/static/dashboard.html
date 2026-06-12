@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dashboard — Sistema de Frotas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <style>
+        body { background: #f5f5f5; }
+        .sidebar {
+            width: 240px; min-height: 100vh; background: #1b5e20;
+            position: fixed; top:0; left:0; z-index:100;
+        }
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.8); padding: 10px 20px;
+            border-radius: 8px; margin: 2px 8px;
+        }
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background: rgba(255,255,255,0.15); color: #fff;
+        }
+        .sidebar .nav-link i { width: 20px; }
+        .main { margin-left: 240px; padding: 24px; }
+        .card-stat {
+            border-radius: 12px; border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        #mapa { height: 380px; width: 100%; border-radius: 8px; }
+        .topbar {
+            background: #fff; border-radius: 12px; padding: 12px 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 24px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .card-viagem {
+            border-radius: 10px; border: 1px solid #e0e0e0;
+            padding: 12px; margin-bottom: 10px; background: #fff;
+            transition: box-shadow 0.2s;
+        }
+        .card-viagem:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+    </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar d-flex flex-column py-3">
+    <div class="text-center text-white mb-4 mt-2">
+        <i class="bi bi-truck fs-2"></i>
+        <div class="fw-bold mt-1">Frotas</div>
+    </div>
+    <nav class="nav flex-column">
+        <a href="/dashboard.html" class="nav-link active">
+            <i class="bi bi-speedometer2 me-2"></i>Dashboard
+        </a>
+        <a href="/veiculos.html" class="nav-link">
+            <i class="bi bi-truck me-2"></i>Veículos
+        </a>
+        <a href="/motoristas.html" class="nav-link">
+            <i class="bi bi-person-badge me-2"></i>Motoristas
+        </a>
+        <a href="/rotas.html" class="nav-link">
+            <i class="bi bi-map me-2"></i>Rotas
+        </a>
+        <a href="/viagens.html" class="nav-link">
+            <i class="bi bi-signpost-split me-2"></i>Viagens
+        </a>
+    </nav>
+    <div class="mt-auto px-3">
+        <button onclick="logout()" class="btn btn-outline-light btn-sm w-100">
+            <i class="bi bi-box-arrow-left me-1"></i>Sair
+        </button>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="main">
+    <div class="topbar">
+        <div>
+            <h5 class="mb-0 fw-bold text-success">
+                <i class="bi bi-speedometer2 me-2"></i>Dashboard
+            </h5>
+        </div>
+        <div class="text-muted small" id="nomeUsuario"></div>
+    </div>
+
+    <!-- Cards de Estatísticas -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card card-stat p-3 border-start border-success border-4">
+                <div class="text-muted small">Veículos</div>
+                <div class="fs-2 fw-bold text-success" id="totalVeiculos">
+                    <span class="spinner-border spinner-border-sm"></span>
+                </div>
+                <div class="text-muted small">cadastrados</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-stat p-3 border-start border-primary border-4">
+                <div class="text-muted small">Motoristas</div>
+                <div class="fs-2 fw-bold text-primary" id="totalMotoristas">
+                    <span class="spinner-border spinner-border-sm"></span>
+                </div>
+                <div class="text-muted small">cadastrados</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-stat p-3 border-start border-warning border-4">
+                <div class="text-muted small">Viagens Ativas</div>
+                <div class="fs-2 fw-bold text-warning" id="totalAtivas">
+                    <span class="spinner-border spinner-border-sm"></span>
+                </div>
+                <div class="text-muted small">em andamento</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-stat p-3 border-start border-info border-4">
+                <div class="text-muted small">Rotas</div>
+                <div class="fs-2 fw-bold text-info" id="totalRotas">
+                    <span class="spinner-border spinner-border-sm"></span>
+                </div>
+                <div class="text-muted small">cadastradas</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mapa + Viagens Ativas -->
+    <div class="row g-3 mb-3">
+        <div class="col-md-7">
+            <div class="card p-3" style="border-radius:12px; border:none; box-shadow:0 2px 8px rgba(0,0,0,0.08)">
+                <h6 class="fw-bold mb-3">
+                    <i class="bi bi-map me-2 text-success"></i>Mapa de Rotas
+                </h6>
+                <div id="mapa"></div>
+                <div class="mt-2 d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-success" onclick="usarLeaflet()">
+                        <i class="bi bi-map me-1"></i>Leaflet
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary" onclick="usarCarto()">
+                        <i class="bi bi-globe me-1"></i>CARTO
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-5">
+            <div class="card p-3" style="border-radius:12px; border:none; box-shadow:0 2px 8px rgba(0,0,0,0.08); height:100%">
+                <h6 class="fw-bold mb-3">
+                    <i class="bi bi-signpost-split me-2 text-warning"></i>Viagens Ativas
+                </h6>
+                <div id="listaViagensAtivas" style="max-height:400px; overflow-y:auto">
+                    <div class="text-center py-3">
+                        <span class="spinner-border text-warning"></span>
+                        <div class="text-muted small mt-2">Carregando viagens...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Relatórios -->
+    <div class="card p-3" style="border-radius:12px; border:none; box-shadow:0 2px 8px rgba(0,0,0,0.08)">
+        <h6 class="fw-bold mb-3">
+            <i class="bi bi-file-earmark-text me-2 text-danger"></i>Relatórios
+        </h6>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="/api/relatorios/viagens/pdf" target="_blank"
+               class="btn btn-outline-danger btn-sm">
+                <i class="bi bi-file-pdf me-1"></i>Viagens PDF
+            </a>
+            <a href="/api/relatorios/veiculos/pdf" target="_blank"
+               class="btn btn-outline-danger btn-sm">
+                <i class="bi bi-file-pdf me-1"></i>Veículos PDF
+            </a>
+            <a href="/api/relatorios/motoristas/pdf" target="_blank"
+               class="btn btn-outline-danger btn-sm">
+                <i class="bi bi-file-pdf me-1"></i>Motoristas PDF
+            </a>
+            <a href="/api/relatorios/viagens/excel"
+               class="btn btn-outline-success btn-sm">
+                <i class="bi bi-file-excel me-1"></i>Viagens Excel
+            </a>
+            <a href="/api/relatorios/veiculos/excel"
+               class="btn btn-outline-success btn-sm">
+                <i class="bi bi-file-excel me-1"></i>Veículos Excel
+            </a>
+            <a href="/api/relatorios/motoristas/excel"
+               class="btn btn-outline-success btn-sm">
+                <i class="bi bi-file-excel me-1"></i>Motoristas Excel
+            </a>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/js/api.js"></script>
+<script>
+    checkAuth();
+    document.getElementById('nomeUsuario').textContent =
+        'Olá, ' + (getUsuario().nome || 'Usuário');
+
+    let mapa = null;
+    let tileAtual = null;
+
+    // Inicia mapa após página carregar
+    window.addEventListener('load', function () {
+        setTimeout(() => {
+            mapa = L.map('mapa').setView([-15.7801, -47.9292], 4);
+            tileAtual = L.tileLayer(
+                'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                { attribution: '© OpenStreetMap | Leaflet' }
+            ).addTo(mapa);
+            mapa.invalidateSize();
+            // Carrega viagens depois do mapa estar pronto
+            carregarViagensAtivas();
+        }, 300);
+    });
+
+    function usarLeaflet() {
+        if (!mapa) return;
+        if (tileAtual) mapa.removeLayer(tileAtual);
+        tileAtual = L.tileLayer(
+            'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            { attribution: '© OpenStreetMap | Leaflet' }
+        ).addTo(mapa);
+    }
+
+    function usarCarto() {
+        if (!mapa) return;
+        if (tileAtual) mapa.removeLayer(tileAtual);
+        tileAtual = L.tileLayer(
+            'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+            { attribution: '© CARTO | © OpenStreetMap' }
+        ).addTo(mapa);
+    }
+
+    async function carregarStats() {
+        try {
+            const token = getToken();
+            const opts = {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                }
+            };
+            const [v, m, r, va] = await Promise.all([
+                fetch('http://localhost:8080/api/veiculos?size=1', opts).then(r => r.json()),
+                fetch('http://localhost:8080/api/motoristas?size=1', opts).then(r => r.json()),
+                fetch('http://localhost:8080/api/rotas?size=1', opts).then(r => r.json()),
+                fetch('http://localhost:8080/api/viagens/ativas?size=1', opts).then(r => r.json())
+            ]);
+            document.getElementById('totalVeiculos').textContent =
+                v.totalElements !== undefined ? v.totalElements : '0';
+            document.getElementById('totalMotoristas').textContent =
+                m.totalElements !== undefined ? m.totalElements : '0';
+            document.getElementById('totalRotas').textContent =
+                r.totalElements !== undefined ? r.totalElements : '0';
+            document.getElementById('totalAtivas').textContent =
+                va.totalElements !== undefined ? va.totalElements : '0';
+        } catch (e) {
+            console.error('Erro stats:', e);
+            ['totalVeiculos','totalMotoristas','totalRotas','totalAtivas']
+                .forEach(id => document.getElementById(id).textContent = '—');
+        }
+    }
+
+    async function geocodificarCidade(cidade) {
+        try {
+            const res = await fetch(
+                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cidade)},Brasil&format=json&limit=1`,
+                { headers: { 'User-Agent': 'GerenciamentoFrotas/1.0' } }
+            );
+            const data = await res.json();
+            if (data && data.length > 0) {
+                return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+            }
+        } catch (e) {
+            console.error('Erro geocodificação:', e);
+        }
+        return null;
+    }
+
+    async function adicionarMarcadoresViagem(v) {
+        if (!mapa) return;
+
+        const coordOrigem = await geocodificarCidade(v.rota.origem);
+        const coordDestino = await geocodificarCidade(v.rota.destino);
+
+        if (!coordOrigem || !coordDestino) {
+            console.warn('Não foi possível geocodificar:', v.rota.origem, v.rota.destino);
+            return;
+        }
+
+        // Ícone A — Origem (verde)
+        const iconOrigem = L.divIcon({
+            html: `<div style="background:#2e7d32;color:white;border-radius:50%;
+                    width:30px;height:30px;display:flex;align-items:center;
+                    justify-content:center;font-weight:bold;font-size:13px;
+                    box-shadow:0 2px 6px rgba(0,0,0,0.4);border:2px solid white">A</div>`,
+            iconSize: [30, 30], iconAnchor: [15, 15]
+        });
+
+        // Ícone B — Destino (vermelho)
+        const iconDestino = L.divIcon({
+            html: `<div style="background:#c62828;color:white;border-radius:50%;
+                    width:30px;height:30px;display:flex;align-items:center;
+                    justify-content:center;font-weight:bold;font-size:13px;
+                    box-shadow:0 2px 6px rgba(0,0,0,0.4);border:2px solid white">B</div>`,
+            iconSize: [30, 30], iconAnchor: [15, 15]
+        });
+
+        // Ícone caminhão — ponto médio da rota (laranja)
+        const iconCaminhao = L.divIcon({
+            html: `<div style="background:#e65100;color:white;border-radius:8px;
+                    padding:3px 7px;font-size:18px;
+                    box-shadow:0 2px 6px rgba(0,0,0,0.4)">🚛</div>`,
+            iconSize: [38, 30], iconAnchor: [19, 15]
+        });
+
+        // Marcador origem
+        L.marker([coordOrigem.lat, coordOrigem.lon], { icon: iconOrigem })
+            .addTo(mapa)
+            .bindPopup(`
+                <b>📍 Origem</b><br>
+                <span class="text-success">${v.rota.origem}</span>
+            `);
+
+        // Marcador destino
+        L.marker([coordDestino.lat, coordDestino.lon], { icon: iconDestino })
+            .addTo(mapa)
+            .bindPopup(`
+                <b>🏁 Destino</b><br>
+                <span class="text-danger">${v.rota.destino}</span>
+            `);
+
+        // Caminhão no ponto médio
+        const midLat = (coordOrigem.lat + coordDestino.lat) / 2;
+        const midLon = (coordOrigem.lon + coordDestino.lon) / 2;
+        L.marker([midLat, midLon], { icon: iconCaminhao })
+            .addTo(mapa)
+            .bindPopup(`
+                <b>🚛 ${v.veiculo.placa}</b><br>
+                👤 ${v.motorista.nome}<br>
+                📍 ${v.rota.origem} → ${v.rota.destino}<br>
+                📏 ${v.rota.distanciaKm || '—'} km<br>
+                💰 R$ ${v.custoCalculado?.toFixed(2) || '—'}
+            `);
+
+        // Linha tracejada conectando os pontos
+        L.polyline(
+            [[coordOrigem.lat, coordOrigem.lon], [coordDestino.lat, coordDestino.lon]],
+            { color: '#1565c0', weight: 3, dashArray: '8, 6', opacity: 0.8 }
+        ).addTo(mapa);
+
+        // Ajusta zoom para mostrar toda a rota
+        mapa.fitBounds(
+            [[coordOrigem.lat, coordOrigem.lon], [coordDestino.lat, coordDestino.lon]],
+            { padding: [60, 60] }
+        );
+    }
+
+    async function carregarViagensAtivas() {
+        try {
+            const data = await apiFetch('/viagens/ativas?size=10');
+            const el = document.getElementById('listaViagensAtivas');
+
+            if (!data.content || data.content.length === 0) {
+                el.innerHTML = `
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                        Nenhuma viagem ativa no momento
+                    </div>`;
+                return;
+            }
+
+            el.innerHTML = data.content.map(v => `
+                <div class="card-viagem">
+                    <span class="badge bg-warning text-dark mb-2">Em andamento</span>
+                    <div class="fw-semibold">
+                        <i class="bi bi-truck me-1 text-success"></i>
+                        ${v.veiculo.placa} — ${v.veiculo.tipo}
+                    </div>
+                    <div class="text-muted small mt-1">
+                        <i class="bi bi-person me-1"></i>${v.motorista.nome}
+                    </div>
+                    <div class="text-muted small">
+                        <i class="bi bi-geo-alt me-1 text-success"></i>${v.rota.origem}
+                        <i class="bi bi-arrow-right mx-1"></i>
+                        <i class="bi bi-geo-alt-fill me-1 text-danger"></i>${v.rota.destino}
+                    </div>
+                    <div class="text-muted small">
+                        <i class="bi bi-cash me-1"></i>
+                        Custo: <strong>R$ ${v.custoCalculado?.toFixed(2) || '—'}</strong>
+                    </div>
+                    <button class="btn btn-sm btn-warning w-100 mt-2 fw-semibold"
+                        onclick="finalizarViagem(${v.id})">
+                        <i class="bi bi-flag-fill me-1"></i>Finalizar Viagem
+                    </button>
+                </div>
+            `).join('');
+
+            // Adiciona marcadores reais no mapa para cada viagem
+            for (const v of data.content) {
+                await adicionarMarcadoresViagem(v);
+            }
+
+        } catch (e) {
+            console.error('Erro ao carregar viagens:', e);
+            document.getElementById('listaViagensAtivas').innerHTML = `
+                <div class="alert alert-danger small">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    Erro ao carregar viagens: ${e.message}
+                </div>`;
+        }
+    }
+
+    async function finalizarViagem(id) {
+        if (!confirm(`Finalizar viagem #${id}?\n\nO veículo e motorista serão liberados automaticamente.`))
+            return;
+        try {
+            await apiFetch('/viagens/' + id + '/finalizar', { method: 'PATCH' });
+
+            // Limpa marcadores do mapa
+            if (mapa) {
+                mapa.eachLayer(l => {
+                    if (l instanceof L.Marker || l instanceof L.Polyline)
+                        mapa.removeLayer(l);
+                });
+                mapa.setView([-15.7801, -47.9292], 4);
+            }
+
+            await carregarStats();
+            await carregarViagensAtivas();
+        } catch (e) {
+            alert('Erro ao finalizar: ' + e.message);
+        }
+    }
+
+    // Inicia carregamento das stats
+    carregarStats();
+</script>
+</body>
+</html>

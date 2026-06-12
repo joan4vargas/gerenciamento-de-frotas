@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Motoristas — Sistema de Frotas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { background: #f5f5f5; }
+        .sidebar { width: 240px; min-height: 100vh; background: #1b5e20; position: fixed; top:0; left:0; }
+        .sidebar .nav-link { color: rgba(255,255,255,0.8); padding: 10px 20px; border-radius: 8px; margin: 2px 8px; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { background: rgba(255,255,255,0.15); color: #fff; }
+        .main { margin-left: 240px; padding: 24px; }
+        .topbar { background: #fff; border-radius: 12px; padding: 12px 20px;
+                  box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 24px;
+                  display: flex; justify-content: space-between; align-items: center; }
+        .form-label { font-weight: 500; }
+        .form-label .obrigatorio { color: #dc3545; margin-left: 2px; }
+        .dica { font-size: 0.78rem; color: #6c757d; margin-top: 2px; }
+    </style>
+</head>
+<body>
+<div class="sidebar d-flex flex-column py-3">
+    <div class="text-center text-white mb-4 mt-2">
+        <i class="bi bi-truck fs-2"></i>
+        <div class="fw-bold mt-1">Frotas</div>
+    </div>
+    <nav class="nav flex-column">
+        <a href="/dashboard.html" class="nav-link"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a>
+        <a href="/veiculos.html" class="nav-link"><i class="bi bi-truck me-2"></i>Veículos</a>
+        <a href="/motoristas.html" class="nav-link active"><i class="bi bi-person-badge me-2"></i>Motoristas</a>
+        <a href="/rotas.html" class="nav-link"><i class="bi bi-map me-2"></i>Rotas</a>
+        <a href="/viagens.html" class="nav-link"><i class="bi bi-signpost-split me-2"></i>Viagens</a>
+    </nav>
+    <div class="mt-auto px-3">
+        <button onclick="logout()" class="btn btn-outline-light btn-sm w-100">
+            <i class="bi bi-box-arrow-left me-1"></i>Sair
+        </button>
+    </div>
+</div>
+
+<div class="main">
+    <div class="topbar">
+        <h5 class="mb-0 fw-bold text-success"><i class="bi bi-person-badge me-2"></i>Motoristas</h5>
+        <button class="btn btn-success btn-sm" onclick="abrirModal()">
+            <i class="bi bi-plus-lg me-1"></i>Novo Motorista
+        </button>
+    </div>
+
+    <div class="card p-3" style="border-radius:12px; border:none; box-shadow:0 2px 8px rgba(0,0,0,0.08)">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-success">
+                <tr>
+                    <th>ID</th><th>Nome</th><th>CPF</th><th>CNH</th>
+                    <th>Categoria</th><th>Telefone</th><th>Status</th><th>Ações</th>
+                </tr>
+                </thead>
+                <tbody id="tabela"></tbody>
+            </table>
+        </div>
+        <div id="paginacao" class="d-flex justify-content-center gap-2 mt-2"></div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="modal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="modalTitulo">Novo Motorista</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="erroModal"></div>
+                <input type="hidden" id="motoristaId">
+
+                <div class="alert alert-info py-2 small mb-3">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Campos marcados com <span class="text-danger fw-bold">*</span> são obrigatórios.
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label">Nome completo <span class="obrigatorio">*</span></label>
+                        <input type="text" id="nome" class="form-control"
+                               placeholder="Ex: João da Silva">
+                        <div class="dica">Digite o nome completo do motorista</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">CPF <span class="obrigatorio">*</span></label>
+                        <input type="text" id="cpf" class="form-control"
+                               placeholder="Ex: 03427133021"
+                               oninput="formatarCpf(this)">
+                        <div class="dica">Somente números ou no formato 000.000.000-00</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Telefone <span class="obrigatorio">*</span></label>
+                        <input type="text" id="telefone" class="form-control"
+                               placeholder="Ex: (51) 99999-9999"
+                               oninput="formatarTelefone(this)">
+                        <div class="dica">Celular ou fixo com DDD</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Número da CNH <span class="obrigatorio">*</span></label>
+                        <input type="text" id="cnh" class="form-control"
+                               placeholder="Ex: 12365489756">
+                        <div class="dica">Número do registro da CNH (11 dígitos)</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Categoria da CNH <span class="obrigatorio">*</span></label>
+                        <select id="categoriaCnh" class="form-select">
+                            <option value="">Selecione a categoria</option>
+                            <option value="A">A — Motocicletas</option>
+                            <option value="B">B — Veículos leves</option>
+                            <option value="C">C — Veículos de carga</option>
+                            <option value="D">D — Passageiros (ônibus)</option>
+                            <option value="E">E — Combinações (carreta/bitrem)</option>
+                            <option value="AB">AB</option>
+                            <option value="AC">AC</option>
+                            <option value="AD">AD</option>
+                            <option value="AE">AE</option>
+                        </select>
+                        <div class="dica">Selecione a categoria habilitada na CNH</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-success" onclick="salvar()">
+                    <i class="bi bi-check-lg me-1"></i>Salvar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/api.js"></script>
+<script>
+    checkAuth();
+    let paginaAtual = 0;
+    const modal = new bootstrap.Modal(document.getElementById('modal'));
+
+    const badgeStatus = {
+        DISPONIVEL: 'success', EM_VIAGEM: 'primary',
+        AFASTADO: 'warning', INATIVO: 'secondary'
+    };
+
+    // Formata CPF automaticamente enquanto digita
+    function formatarCpf(input) {
+        let v = input.value.replace(/\D/g, '');
+        if (v.length <= 11) {
+            v = v.replace(/(\d{3})(\d)/, '$1.$2');
+            v = v.replace(/(\d{3})(\d)/, '$1.$2');
+            v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+        }
+        input.value = v;
+    }
+
+    // Formata telefone automaticamente
+    function formatarTelefone(input) {
+        let v = input.value.replace(/\D/g, '');
+        if (v.length <= 11) {
+            v = v.replace(/^(\d{2})(\d)/, '($1) $2');
+            v = v.replace(/(\d{5})(\d{4})$/, '$1-$2');
+        }
+        input.value = v;
+    }
+
+    // Validação no frontend antes de enviar
+    function validarFormulario() {
+        limparErros();
+        let valido = true;
+        const campos = [
+            { id: 'nome', msg: 'Informe o nome completo do motorista' },
+            { id: 'cpf', msg: 'Informe o CPF do motorista' },
+            { id: 'telefone', msg: 'Informe o telefone do motorista' },
+            { id: 'cnh', msg: 'Informe o número da CNH' },
+            { id: 'categoriaCnh', msg: 'Selecione a categoria da CNH' }
+        ];
+        campos.forEach(({ id, msg }) => {
+            const el = document.getElementById(id);
+            if (!el.value || el.value.trim() === '' || el.value === '') {
+                el.classList.add('is-invalid');
+                const div = document.createElement('div');
+                div.className = 'invalid-feedback';
+                div.textContent = msg;
+                el.parentNode.appendChild(div);
+                valido = false;
+            }
+        });
+        return valido;
+    }
+
+    async function carregar(page = 0) {
+        const data = await apiFetch(`/motoristas?page=${page}&size=10&sort=id`);
+        paginaAtual = page;
+        document.getElementById('tabela').innerHTML = data.content.map(m => `
+            <tr>
+                <td>${m.id}</td>
+                <td><strong>${m.nome}</strong></td>
+                <td>${m.cpf}</td>
+                <td>${m.cnh}</td>
+                <td><span class="badge bg-dark">${m.categoriaCnh}</span></td>
+                <td>${m.telefone}</td>
+                <td><span class="badge bg-${badgeStatus[m.status]}">${m.status}</span></td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary me-1" onclick="editar(${m.id})"
+                        title="Editar motorista">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-warning me-1"
+                        onclick="editarStatus(${m.id}, '${m.status}')"
+                        title="Alterar status">
+                        <i class="bi bi-arrow-repeat"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger"
+                        onclick="deletar(${m.id})"
+                        title="Excluir motorista">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+
+        const pag = document.getElementById('paginacao');
+        pag.innerHTML = '';
+        for (let i = 0; i < data.totalPages; i++) {
+            pag.innerHTML += `<button class="btn btn-sm ${i === page ? 'btn-success' : 'btn-outline-success'}"
+                onclick="carregar(${i})">${i + 1}</button>`;
+        }
+    }
+
+    function abrirModal() {
+        limparErros();
+        document.getElementById('erroModal').innerHTML = '';
+        document.getElementById('motoristaId').value = '';
+        document.getElementById('nome').value = '';
+        document.getElementById('cpf').value = '';
+        document.getElementById('telefone').value = '';
+        document.getElementById('cnh').value = '';
+        document.getElementById('categoriaCnh').value = '';
+        document.getElementById('modalTitulo').textContent = 'Novo Motorista';
+        modal.show();
+    }
+
+    async function editar(id) {
+        const m = await apiFetch('/motoristas/' + id);
+        limparErros();
+        document.getElementById('erroModal').innerHTML = '';
+        document.getElementById('motoristaId').value = m.id;
+        document.getElementById('nome').value = m.nome;
+        document.getElementById('cpf').value = m.cpf;
+        document.getElementById('telefone').value = m.telefone;
+        document.getElementById('cnh').value = m.cnh;
+        document.getElementById('categoriaCnh').value = m.categoriaCnh;
+        document.getElementById('modalTitulo').textContent = 'Editar Motorista #' + m.id;
+        modal.show();
+    }
+
+    async function salvar() {
+        if (!validarFormulario()) return;
+
+        const id = document.getElementById('motoristaId').value;
+        const body = {
+            nome: document.getElementById('nome').value.trim(),
+            cpf: document.getElementById('cpf').value.trim(),
+            cnh: document.getElementById('cnh').value.trim(),
+            categoriaCnh: document.getElementById('categoriaCnh').value,
+            telefone: document.getElementById('telefone').value.trim()
+        };
+        try {
+            if (id) {
+                await apiFetch('/motoristas/' + id, { method: 'PUT', body: JSON.stringify(body) });
+            } else {
+                await apiFetch('/motoristas', { method: 'POST', body: JSON.stringify(body) });
+            }
+            modal.hide();
+            carregar(paginaAtual);
+        } catch (e) {
+            if (e.campos) {
+                mostrarErros(e.campos);
+            } else {
+                mostrarAlertaErro(e.message);
+            }
+        }
+    }
+
+    async function editarStatus(id, statusAtual) {
+        const opcoes = {
+            DISPONIVEL: 'Disponível para viagens',
+            AFASTADO: 'Afastado temporariamente',
+            INATIVO: 'Inativo no sistema'
+        };
+        const msg = Object.entries(opcoes)
+            .map(([k, v]) => `${k} — ${v}`).join('\n');
+        const novo = prompt(
+            `Status atual: ${statusAtual}\n\nEscolha o novo status:\n${msg}`,
+            statusAtual
+        );
+        if (!novo || novo === statusAtual) return;
+        if (!['DISPONIVEL', 'AFASTADO', 'INATIVO'].includes(novo.toUpperCase())) {
+            alert('Status inválido! Use: DISPONIVEL, AFASTADO ou INATIVO');
+            return;
+        }
+        try {
+            await apiFetch(`/motoristas/${id}/status?status=${novo.toUpperCase()}`,
+                { method: 'PATCH' });
+            carregar(paginaAtual);
+        } catch (e) { alert(e.message); }
+    }
+
+    async function deletar(id) {
+        if (!confirm(`Excluir motorista #${id}?\n\nEsta ação não pode ser desfeita.`)) return;
+        try {
+            await apiFetch('/motoristas/' + id, { method: 'DELETE' });
+            carregar(paginaAtual);
+        } catch (e) { alert('Erro ao excluir: ' + e.message); }
+    }
+
+    carregar();
+</script>
+</body>
+</html>
