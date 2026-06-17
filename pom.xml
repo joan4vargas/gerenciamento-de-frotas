@@ -19,7 +19,7 @@
     <description>Sistema de Controle de Frotas</description>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>2x</java.version>
     </properties>
 
     <dependencies>
@@ -64,7 +64,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.30</version>
+            <version>1.18.36</version>
             <optional>true</optional>
         </dependency>
         <dependency>
