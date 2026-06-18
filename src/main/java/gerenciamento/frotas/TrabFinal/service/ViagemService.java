@@ -58,9 +58,10 @@ public class ViagemService {
                 .orElseThrow(() -> new ResourceNotFoundException("Viagem", id)));
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true)  // ← ADICIONE ESSA LINHA
     public Page<ViagemResponseDTO> listarAtivas(Pageable pageable) {
-        return viagemRepository.findByStatusViagem(false, pageable).map(this::toDTO);
+        return viagemRepository.findByStatusViagem(false, pageable)
+                .map(this::toDTO);
     }
 
     @Transactional(readOnly = true)

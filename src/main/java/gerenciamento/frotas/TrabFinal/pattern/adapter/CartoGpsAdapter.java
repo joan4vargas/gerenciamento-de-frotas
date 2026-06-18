@@ -1,87 +1,88 @@
 package gerenciamento.frotas.TrabFinal.pattern.adapter;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.http.*;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.http.ResponseEntity;
 
 @Component("carto")
 public class CartoGpsAdapter implements GpsService {
 
-    private final RestTemplate restTemplate = new RestTemplate();
-    private final ObjectMapper mapper = new ObjectMapper();
+    @Autowired
+    private RestTemplate restTemplate;
+
+    private static final String NOMINATIM_API = "https://nominatim.openstreetmap.org/search";
 
     @Override
-    public double calcularDistancia(String origem, String destino) {
+    public Double calcularDistancia(String origem, String destino) {
         try {
-            double[] coordOrigem = geocodificar(origem);
-            double[] coordDestino = geocodificar(destino);
-            if (coordOrigem != null && coordDestino != null) {
-                return calcularHaversine(
-                        coordOrigem[0], coordOrigem[1],
-                        coordDestino[0], coordDestino[1]);
-            }
+            double[] coordOrigem = geocodificarNominatim(origem);
+            double[] coordDestino = geocodificarNominatim(destino);
+            return calcularHaversine(coordOrigem[0], coordOrigem[1],
+                    coordDestino[0], coordDestino[1]) * 1.3;
         } catch (Exception e) {
-            System.out.println("[CARTO] Erro: " + e.getMessage());
+            System.err.println("Erro ao calcular distância: " + e.getMessage());
+            return 50.0;
         }
-        return Math.abs((origem + destino).hashCode() % 500) + 30.0;
     }
 
     @Override
-    public int calcularTempoEstimado(String origem, String destino) {
-        double distancia = calcularDistancia(origem, destino);
-        // CARTO considera tráfego: 70 km/h médio
-        return (int) Math.ceil((distancia / 70.0) * 60);
+    public Integer calcularTempoEstimado(String origem, String destino) {
+        try {
+            Double distancia = calcularDistancia(origem, destino);
+            return (int) (distancia / 70 * 60); // 70 km/h (mais conservador que Leaflet)
+        } catch (Exception e) {
+            return 60; // 1 hora como padrão
+        }
     }
 
     @Override
     public String obterRota(String origem, String destino) {
-        double distancia = calcularDistancia(origem, destino);
-        int tempo = calcularTempoEstimado(origem, destino);
-        return "{\"provider\":\"CARTO\","
-                + "\"origem\":\"" + origem + "\","
-                + "\"destino\":\"" + destino + "\","
-                + "\"distanciaKm\":" + String.format("%.1f", distancia) + ","
-                + "\"tempoMinutos\":" + tempo + "}";
-    }
-
-    private double[] geocodificar(String cidade) {
         try {
-            String url = "https://nominatim.openstreetmap.org/search"
-                    + "?q=" + cidade.replace(" ", "+") + ",Brasil"
-                    + "&format=json&limit=1";
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("User-Agent", "GerenciamentoFrotas/1.0");
-            HttpEntity<String> entity = new HttpEntity<>(headers);
-
-            ResponseEntity<String> response = restTemplate.exchange(
-                    url, HttpMethod.GET, entity, String.class);
-
-            JsonNode root = mapper.readTree(response.getBody());
-            if (root.isArray() && root.size() > 0) {
-                double lat = root.get(0).get("lat").asDouble();
-                double lon = root.get(0).get("lon").asDouble();
-                System.out.println("[CARTO] Geocodificado: " + cidade +
-                        " → [" + lat + ", " + lon + "]");
-                return new double[]{lat, lon};
-            }
+            Double distancia = calcularDistancia(origem, destino);
+            Integer tempo = calcularTempoEstimado(origem, destino);
+            return "{ \"provider\": \"CARTO+Haversine\", \"distanciaKm\": " + distancia + ", \"tempoMinutos\": " + tempo + " }";
         } catch (Exception e) {
-            System.out.println("[CARTO] Erro geocodificação: " + e.getMessage());
+            return "{ \"error\": \"" + e.getMessage() + "\" }";
         }
-        return null;
     }
 
-    private double calcularHaversine(double lat1, double lon1,
-                                     double lat2, double lon2) {
-        final int R = 6371;
+    @Override
+    public String getNome() {
+        return "CARTO+Haversine";
+    }
+
+    // ═══ MÉTODOS PRIVADOS ═══
+
+    private double[] geocodificarNominatim(String cidade) throws Exception {
+        String url = NOMINATIM_API + "?q=" + cidade.replace(" ", "+") + "&format=json&limit=1";
+        ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+        JSONArray results = new JSONArray(response.getBody());
+
+        if (results.length() == 0) {
+            throw new Exception("Cidade não encontrada: " + cidade);
+        }
+
+        JSONObject local = results.getJSONObject(0);
+        double lat = local.getDouble("lat");
+        double lon = local.getDouble("lon");
+
+        return new double[]{lat, lon};
+    }
+
+    private Double calcularHaversine(double lat1, double lon1, double lat2, double lon2) {
+        final int RAIO_TERRA_KM = 6371;
+
         double dLat = Math.toRadians(lat2 - lat1);
         double dLon = Math.toRadians(lon2 - lon1);
-        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
-                + Math.cos(Math.toRadians(lat1))
-                * Math.cos(Math.toRadians(lat2))
-                * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 1.3;
+
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return RAIO_TERRA_KM * c;
     }
 }
