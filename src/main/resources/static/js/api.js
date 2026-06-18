@@ -1,13 +1,11 @@
-// ====================================================================
 // API.JS - Funcoes compartilhadas por todas as paginas
-// Local correto: src/main/resources/static/js/api.js
-// ====================================================================
+
 
 const API_BASE_URL = 'http://localhost:8080';
 
-// --------------------------------------------------------------------
+
 // AUTENTICACAO
-// --------------------------------------------------------------------
+
 
 function getToken() {
     return localStorage.getItem('token') || '';
@@ -33,10 +31,10 @@ function logout() {
     window.location.href = '/index.html';
 }
 
-// --------------------------------------------------------------------
+
 // FETCH GENERICO COM JWT
 // Adiciona /api automaticamente se o path nao comecar com /api
-// --------------------------------------------------------------------
+
 
 function apiFetch(path, options = {}) {
     const token = getToken();
@@ -83,9 +81,9 @@ function apiFetch(path, options = {}) {
     });
 }
 
-// --------------------------------------------------------------------
+
 // TRATAMENTO DE ERROS
-// --------------------------------------------------------------------
+
 
 function mostrarErros(erros) {
     const container = document.getElementById('erroModal') || document.getElementById('erroGeral');
@@ -128,9 +126,9 @@ function limparErros() {
     document.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
 }
 
-// --------------------------------------------------------------------
+
 // RELATORIOS
-// --------------------------------------------------------------------
+
 
 function baixarRelatorio(tipo, formato) {
     const token = getToken();
@@ -154,9 +152,9 @@ function baixarRelatorio(tipo, formato) {
     .catch(error => alert('Erro ao baixar: ' + error.message));
 }
 
-// --------------------------------------------------------------------
+
 // UTILITARIOS
-// --------------------------------------------------------------------
+
 
 function formatarData(data) {
     if (!data) return '-';
