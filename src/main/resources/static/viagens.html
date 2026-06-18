@@ -242,6 +242,7 @@
             el.parentNode.appendChild(div);
             valido = false;
         }
+
     });
     if (!valido) return;
 
@@ -266,7 +267,7 @@
         if (e.campos) {
             mostrarErros(e.campos);
         } else {
-            mostrarAlertaErro(e.message);
+            alert('❌ ' + e.message);
         }
     }
 }

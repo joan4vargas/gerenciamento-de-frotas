@@ -16,6 +16,8 @@ import java.util.List;
 @Component
 public class ViagemFacade {
 
+    private static final int LIMITE_CAPACIDADE_SEM_D_OU_E_KG = 3500;
+
     private final ViagemRepository viagemRepository;
     private final VeiculoRepository veiculoRepository;
     private final MotoristaRepository motoristaRepository;
@@ -66,6 +68,8 @@ public class ViagemFacade {
             throw new BusinessException("Peso da carga (" + pesoCarga +
                     " kg) excede a capacidade do veículo (" + veiculo.getCapacidadeKg() + " kg)");
         }
+
+        validarCategoriaCnh(motorista, veiculo);
 
         // 3. Criar viagem
         Viagem viagem = new Viagem();
@@ -126,5 +130,30 @@ public class ViagemFacade {
         eventPublisher.publicarViagemFinalizada(viagemFinalizada);
 
         return viagemFinalizada;
+    }
+
+    /**
+     * Valida se a categoria da CNH do motorista permite conduzir um veículo
+     * com a capacidade de carga informada.
+     *
+     * Regra (CTB/DETRAN): categorias A, B ou C isoladas só habilitam o
+     * motorista a dirigir veículos com capacidade de até 3,5 toneladas
+     * (3500 kg). Para capacidades superiores, é necessário possuir
+     * categoria D ou E (incluindo categorias compostas, como "AE" ou "BE").
+     */
+    private void validarCategoriaCnh(Motorista motorista, Veiculo veiculo) {
+        String categoria = motorista.getCategoriaCnh() != null
+                ? motorista.getCategoriaCnh().toUpperCase()
+                : "";
+
+        boolean habilitadoParaCargaPesada = categoria.contains("D") || categoria.contains("E");
+
+        if (!habilitadoParaCargaPesada && veiculo.getCapacidadeKg() > LIMITE_CAPACIDADE_SEM_D_OU_E_KG) {
+            throw new BusinessException("Motorista " + motorista.getNome() +
+                    " possui CNH categoria " + motorista.getCategoriaCnh() +
+                    ", que não permite conduzir veículos com capacidade superior a " +
+                    LIMITE_CAPACIDADE_SEM_D_OU_E_KG + " kg (capacidade do veículo: " +
+                    veiculo.getCapacidadeKg() + " kg).");
+        }
     }
 }
