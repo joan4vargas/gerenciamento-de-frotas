@@ -3,6 +3,7 @@ package gerenciamento.frotas.TrabFinal.config;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -18,7 +19,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
-import java.util.Collections;
 
 @Configuration
 @EnableWebSecurity
@@ -27,37 +27,25 @@ public class SecurityConfig {
     @Autowired
     private JwtAuthFilter jwtAuthFilter;
 
-    // ════════════════════════════════════════════════════════════════════
-    // BEAN: RestTemplate para chamadas HTTP (GPS, APIs externas)
-    // ════════════════════════════════════════════════════════════════════
     @Bean
     public RestTemplate restTemplate() {
         return new RestTemplate();
     }
 
-    // ════════════════════════════════════════════════════════════════════
-    // BEAN: PasswordEncoder para BCrypt
-    // ════════════════════════════════════════════════════════════════════
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // ════════════════════════════════════════════════════════════════════
-    // BEAN: AuthenticationManager
-    // ════════════════════════════════════════════════════════════════════
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
-    // ════════════════════════════════════════════════════════════════════
-    // BEAN: CORS Configuration
-    // ════════════════════════════════════════════════════════════════════
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:8080", "http://localhost:3000", "*"));
+        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
@@ -68,44 +56,37 @@ public class SecurityConfig {
         return source;
     }
 
-    // ════════════════════════════════════════════════════════════════════
-    // BEAN: Security Filter Chain (JWT + Stateless)
-    // ════════════════════════════════════════════════════════════════════
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // Desabilitar CSRF (stateless não precisa)
                 .csrf().disable()
-
-                // CORS habilitado
                 .cors().and()
-
-                // Sessão stateless (JWT)
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
-
-                // Autorização por rota
                 .authorizeHttpRequests(authz -> authz
-                        // ═══ ROTAS PÚBLICAS (sem autenticação) ═══
-                        .requestMatchers("/api/auth/**").permitAll()           // Login e registro
-                        .requestMatchers("/api/usuarios").permitAll()         // Criar usuário novo
-                        .requestMatchers("/").permitAll()                     // Raiz
-                        .requestMatchers("/index.html").permitAll()           // Página de login
-                        .requestMatchers("/*.html").permitAll()               // Todos os HTMLs
-                        .requestMatchers("/*.css").permitAll()                // Todos os CSSs
-                        .requestMatchers("/*.js").permitAll()                 // Todos os JavaScripts
-                        .requestMatchers("/favicon.ico").permitAll()          // Favicon
+                        // ═══ ARQUIVOS ESTÁTICOS (LIBERADOS) ═══
+                        .requestMatchers("/").permitAll()
+                        .requestMatchers("/*.html").permitAll()
+                        .requestMatchers("/css/**").permitAll()      // toda a pasta css/
+                        .requestMatchers("/js/**").permitAll()       // toda a pasta js/  ← IMPORTANTE
+                        .requestMatchers("/img/**").permitAll()      // toda a pasta img/
+                        .requestMatchers("/images/**").permitAll()
+                        .requestMatchers("/*.css").permitAll()
+                        .requestMatchers("/*.js").permitAll()
+                        .requestMatchers("/*.ico").permitAll()
+                        .requestMatchers("/favicon.ico").permitAll()
+                        .requestMatchers("/error").permitAll()
 
-                        // ═══ ROTAS PROTEGIDAS (precisam de JWT) ═══
-                        .requestMatchers("/api/**").authenticated()           // Todas as APIs
+                        // ═══ APIs PÚBLICAS ═══
+                        .requestMatchers("/api/auth/**").permitAll()           // login/registro
+                        .requestMatchers(HttpMethod.POST, "/api/usuarios").permitAll()  // criar conta
+
+                        // ═══ APIs PROTEGIDAS (precisam de JWT) ═══
+                        .requestMatchers("/api/**").authenticated()
 
                         // ═══ PADRÃO ═══
-                        .anyRequest().authenticated()
+                        .anyRequest().permitAll()
                 )
-
-                // Adicionar filtro JWT antes do UsernamePasswordAuthenticationFilter
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-
-                // Tratamento de erros de autenticação
                 .exceptionHandling()
                 .authenticationEntryPoint((request, response, authException) -> {
                     response.setStatus(401);

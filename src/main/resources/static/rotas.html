@@ -17,6 +17,17 @@
                   box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 24px;
                   display: flex; justify-content: space-between; align-items: center; }
         #mapaRota { height: 300px; border-radius: 8px; }
+        /* Autocomplete */
+        .autocomplete-wrap { position: relative; }
+        .autocomplete-lista {
+            position: absolute; z-index: 2000; top: 100%; left: 0; right: 0;
+            background: #fff; border: 1px solid #ced4da; border-top: none;
+            border-radius: 0 0 8px 8px; max-height: 220px; overflow-y: auto;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: none;
+        }
+        .autocomplete-item { padding: 8px 12px; cursor: pointer; font-size: 0.9rem; }
+        .autocomplete-item:hover, .autocomplete-item.ativo { background: #e8f5e9; }
+        .autocomplete-item small { color: #6c757d; }
     </style>
 </head>
 <body>
@@ -68,9 +79,8 @@
     </div>
 </div>
 
-<!-- Modal Rota Manual -->
 <div class="modal fade" id="modal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header bg-success text-white">
                 <h5 class="modal-title" id="modalTitulo">Nova Rota</h5>
@@ -78,22 +88,48 @@
             </div>
             <div class="modal-body">
                 <input type="hidden" id="rotaId">
-                <div class="row g-2">
-                    <div class="col-6">
-                        <label class="form-label">Origem</label>
-                        <input type="text" id="origem" class="form-control" placeholder="Ex: Porto Alegre">
+                <div class="row g-3">
+                    <div class="col-12"><h6 class="text-success fw-bold mb-0"><i class="bi bi-geo-alt me-1"></i>Origem</h6></div>
+                    <div class="col-md-4">
+                        <label class="form-label">Estado (UF)</label>
+                        <select id="ufOrigem" class="form-select" onchange="aoMudarUf('Origem')">
+                            <option value="">Carregando...</option>
+                        </select>
                     </div>
-                    <div class="col-6">
-                        <label class="form-label">Destino</label>
-                        <input type="text" id="destino" class="form-control" placeholder="Ex: São Paulo">
+                    <div class="col-md-8">
+                        <label class="form-label">Cidade</label>
+                        <div class="autocomplete-wrap">
+                            <input type="text" id="origem" class="form-control" autocomplete="off"
+                                   placeholder="Selecione o estado primeiro" disabled
+                                   oninput="filtrarCidade('Origem')" onfocus="filtrarCidade('Origem')">
+                            <div class="autocomplete-lista" id="listaOrigem"></div>
+                        </div>
                     </div>
-                    <div class="col-6">
+
+                    <div class="col-12 mt-3"><h6 class="text-danger fw-bold mb-0"><i class="bi bi-geo-alt-fill me-1"></i>Destino</h6></div>
+                    <div class="col-md-4">
+                        <label class="form-label">Estado (UF)</label>
+                        <select id="ufDestino" class="form-select" onchange="aoMudarUf('Destino')">
+                            <option value="">Carregando...</option>
+                        </select>
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label">Cidade</label>
+                        <div class="autocomplete-wrap">
+                            <input type="text" id="destino" class="form-control" autocomplete="off"
+                                   placeholder="Selecione o estado primeiro" disabled
+                                   oninput="filtrarCidade('Destino')" onfocus="filtrarCidade('Destino')">
+                            <div class="autocomplete-lista" id="listaDestino"></div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 mt-3">
                         <label class="form-label">Distância (km)</label>
-                        <input type="number" id="distanciaKm" class="form-control">
+                        <input type="number" id="distanciaKm" class="form-control bg-light" readonly placeholder="Aguardando cidades...">
                     </div>
-                    <div class="col-6">
-                        <label class="form-label">Tempo estimado (min)</label>
-                        <input type="number" id="tempoEstimado" class="form-control">
+                    <div class="col-md-6 mt-3">
+                        <label class="form-label">Tempo estimado</label>
+                        <input type="text" id="tempoEstimado" class="form-control bg-light" readonly placeholder="Aguardando cidades...">
                     </div>
                 </div>
             </div>
@@ -105,28 +141,48 @@
     </div>
 </div>
 
-<!-- Modal GPS -->
 <div class="modal fade" id="modalGps" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title">Criar Rota via GPS</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modalGps"
-                        onclick="fecharModalGps()"></button>
+                <button type="button" class="btn-close btn-close-white" onclick="fecharModalGps()"></button>
             </div>
             <div class="modal-body">
                 <div class="row g-2 mb-3">
-                    <div class="col-5">
-                        <label class="form-label">Origem</label>
-                        <input type="text" id="gpsOrigem" class="form-control" placeholder="Ex: Porto Alegre">
+                    <div class="col-md-3">
+                        <label class="form-label">UF Origem</label>
+                        <select id="ufGpsOrigem" class="form-select" onchange="aoMudarUf('GpsOrigem')">
+                            <option value="">...</option>
+                        </select>
                     </div>
-                    <div class="col-5">
-                        <label class="form-label">Destino</label>
-                        <input type="text" id="gpsDestino" class="form-control" placeholder="Ex: São Paulo">
+                    <div class="col-md-3">
+                        <label class="form-label">Cidade Origem</label>
+                        <div class="autocomplete-wrap">
+                            <input type="text" id="gpsOrigem" class="form-control" autocomplete="off"
+                                   placeholder="Cidade..." disabled
+                                   oninput="filtrarCidade('GpsOrigem')" onfocus="filtrarCidade('GpsOrigem')">
+                            <div class="autocomplete-lista" id="listaGpsOrigem"></div>
+                        </div>
                     </div>
-                    <div class="col-2 d-flex align-items-end">
-                        <button class="btn btn-primary w-100" onclick="consultarGps()">
-                            <i class="bi bi-search"></i>
+                    <div class="col-md-3">
+                        <label class="form-label">UF Destino</label>
+                        <select id="ufGpsDestino" class="form-select" onchange="aoMudarUf('GpsDestino')">
+                            <option value="">...</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Cidade Destino</label>
+                        <div class="autocomplete-wrap">
+                            <input type="text" id="gpsDestino" class="form-control" autocomplete="off"
+                                   placeholder="Cidade..." disabled
+                                   oninput="filtrarCidade('GpsDestino')" onfocus="filtrarCidade('GpsDestino')">
+                            <div class="autocomplete-lista" id="listaGpsDestino"></div>
+                        </div>
+                    </div>
+                    <div class="col-12 d-flex justify-content-end mt-2">
+                        <button class="btn btn-primary" id="btnConsultarGps" onclick="consultarGps()">
+                            <i class="bi bi-search me-1"></i>Consultar GPS
                         </button>
                     </div>
                 </div>
@@ -153,10 +209,176 @@
     let paginaAtual = 0;
     let mapaGps = null;
     let dadosGps = null;
+    let minutosBrutosCalculados = 0; // Armazena o valor numérico puro para o fluxo manual
     const modal = new bootstrap.Modal(document.getElementById('modal'));
     const modalGpsEl = document.getElementById('modalGps');
     const modalGpsBS = new bootstrap.Modal(modalGpsEl);
 
+    // ============ IBGE: Estados e Municípios ============
+    let listaEstados = [];
+    const cacheCidades = {};
+    const contextos = ['Origem','Destino','GpsOrigem','GpsDestino'];
+
+    async function carregarEstados() {
+        try {
+            const res = await fetch('https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome');
+            listaEstados = await res.json();
+            const options = '<option value="">Selecione...</option>' +
+                listaEstados.map(e => `<option value="${e.sigla}">${e.sigla} — ${e.nome}</option>`).join('');
+            contextos.forEach(ctx => {
+                const sel = document.getElementById('uf' + ctx);
+                if (sel) sel.innerHTML = options;
+            });
+        } catch (e) {
+            console.error('Erro ao carregar estados IBGE:', e);
+        }
+    }
+
+    async function carregarCidades(uf) {
+        if (cacheCidades[uf]) return cacheCidades[uf];
+        const res = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios?orderBy=nome`);
+        const dados = await res.json();
+        cacheCidades[uf] = dados.map(c => c.nome);
+        return cacheCidades[uf];
+    }
+
+    async function aoMudarUf(ctx) {
+        const uf = document.getElementById('uf' + ctx).value;
+        const inputCidade = document.getElementById(ctx === 'Origem' ? 'origem' :
+                            ctx === 'Destino' ? 'destino' :
+                            ctx === 'GpsOrigem' ? 'gpsOrigem' : 'gpsDestino');
+        inputCidade.value = '';
+        if (!uf) {
+            inputCidade.disabled = true;
+            inputCidade.placeholder = 'Selecione o estado primeiro';
+            return;
+        }
+        inputCidade.disabled = false;
+        inputCidade.placeholder = 'Carregando cidades...';
+        await carregarCidades(uf);
+        inputCidade.placeholder = 'Digite a cidade...';
+    }
+
+    function filtrarCidade(ctx) {
+        const uf = document.getElementById('uf' + ctx).value;
+        const inputId = ctx === 'Origem' ? 'origem' :
+                        ctx === 'Destino' ? 'destino' :
+                        ctx === 'GpsOrigem' ? 'gpsOrigem' : 'gpsDestino';
+        const input = document.getElementById(inputId);
+        const lista = document.getElementById('lista' + ctx);
+
+        if (!uf || !cacheCidades[uf]) { lista.style.display = 'none'; return; }
+
+        const termo = input.value.trim().toLowerCase();
+        let cidades = cacheCidades[uf];
+        if (termo) {
+            cidades = cidades.filter(c => c.toLowerCase().includes(termo));
+        }
+        cidades = cidades.slice(0, 50);
+
+        if (cidades.length === 0) { lista.style.display = 'none'; return; }
+
+        lista.innerHTML = cidades.map(c =>
+            `<div class="autocomplete-item" onmousedown="selecionarCidade('${ctx}', '${c.replace(/'/g, "\\'")}')">
+                <i class="bi bi-geo-alt text-success me-1"></i>${c} <small>— ${uf}</small>
+            </div>`
+        ).join('');
+        lista.style.display = 'block';
+    }
+
+    function selecionarCidade(ctx, cidade) {
+        const inputId = ctx === 'Origem' ? 'origem' :
+                        ctx === 'Destino' ? 'destino' :
+                        ctx === 'GpsOrigem' ? 'gpsOrigem' : 'gpsDestino';
+        document.getElementById(inputId).value = cidade;
+        document.getElementById('lista' + ctx).style.display = 'none';
+
+        if (ctx === 'Origem' || ctx === 'Destino') {
+            calcularRotaAutomatica();
+        }
+    }
+
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.autocomplete-wrap')) {
+            document.querySelectorAll('.autocomplete-lista').forEach(l => l.style.display = 'none');
+        }
+    });
+
+    // ============ Função Auxiliar: Formatação Inteligente de Tempo ============
+    function formatarTempoVisivel(minutosTotais) {
+        if (!minutosTotais || isNaN(minutosTotais)) return '';
+        if (minutosTotais < 60) {
+            return `${minutosTotais} min`;
+        }
+        const horas = Math.floor(minutosTotais / 60);
+        const minutos = minutosTotais % 60;
+        return minutos > 0 ? `${horas}h ${minutos}min` : `${horas}h`;
+    }
+
+    // ============ Motor Unificado de Cálculo de Rotas Reais pelas Rodovias ============
+    async function obterDadosRotaReal(origem, destino) {
+        const [coordOrigem, coordDestino] = await Promise.all([
+            fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(origem)},Brasil&format=json&limit=1`,
+                { headers: { 'User-Agent': 'GerenciamentoFrotas/1.0' }}).then(r => r.json()),
+            fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(destino)},Brasil&format=json&limit=1`,
+                { headers: { 'User-Agent': 'GerenciamentoFrotas/1.0' }}).then(r => r.json())
+        ]);
+
+        if (!coordOrigem[0] || !coordDestino[0]) {
+            throw new Error("Localidade não encontrada no mapa.");
+        }
+
+        const latO = parseFloat(coordOrigem[0].lat);
+        const lonO = parseFloat(coordOrigem[0].lon);
+        const latD = parseFloat(coordDestino[0].lat);
+        const lonD = parseFloat(coordDestino[0].lon);
+
+        const urlOsrm = `https://router.project-osrm.org/route/v1/driving/${lonO},${latO};${lonD},${latD}?overview=full&geometries=geojson`;
+        const resOsrm = await fetch(urlOsrm);
+        const dadosOsrm = await resOsrm.json();
+
+        if (dadosOsrm.code !== 'Ok' || !dadosOsrm.routes[0]) {
+            throw new Error("Rota rodoviária indisponível para este trajeto.");
+        }
+
+        return {
+            distanciaKm: (dadosOsrm.routes[0].distance / 1000).toFixed(1),
+            tempoMinutos: Math.round(dadosOsrm.routes[0].duration / 60),
+            coordenadas: { latO, lonO, latD, lonD },
+            geometry: dadosOsrm.routes[0].geometry
+        };
+    }
+
+    async function calcularRotaAutomatica() {
+        const origem = document.getElementById('origem').value.trim();
+        const destino = document.getElementById('destino').value.trim();
+
+        if (!origem || !destino) return;
+
+        const inputDistancia = document.getElementById('distanciaKm');
+        const inputTempo = document.getElementById('tempoEstimado');
+
+        inputDistancia.value = '';
+        inputTempo.value = '';
+        inputDistancia.placeholder = 'Calculando rota...';
+        inputTempo.placeholder = 'Calculando rota...';
+
+        try {
+            const rota = await obterDadosRotaReal(origem, destino);
+            inputDistancia.value = rota.distanciaKm;
+
+            // Salva o valor bruto numérico e exibe o texto formatado amigavelmente
+            minutosBrutosCalculados = rota.tempoMinutos;
+            inputTempo.value = formatarTempoVisivel(rota.tempoMinutos);
+        } catch (e) {
+            console.error(e);
+            inputDistancia.placeholder = 'Erro no cálculo';
+            inputTempo.placeholder = 'Erro no cálculo';
+            minutosBrutosCalculados = 0;
+        }
+    }
+
+    // ============ CRUD ============
     async function carregar(page = 0) {
         const data = await apiFetch(`/rotas?page=${page}&size=10&sort=id`);
         paginaAtual = page;
@@ -166,7 +388,7 @@
                 <td><i class="bi bi-geo-alt text-success"></i> ${r.origem}</td>
                 <td><i class="bi bi-geo-alt-fill text-danger"></i> ${r.destino}</td>
                 <td>${r.distanciaKm} km</td>
-                <td>${r.tempoEstimado} min</td>
+                <td>${formatarTempoVisivel(r.tempoEstimado)}</td>
                 <td>
                     <button class="btn btn-sm btn-outline-primary me-1" onclick="editar(${r.id})">
                         <i class="bi bi-pencil"></i>
@@ -188,35 +410,70 @@
 
     function abrirModal() {
         document.getElementById('rotaId').value = '';
+        document.getElementById('ufOrigem').value = '';
+        document.getElementById('ufDestino').value = '';
         document.getElementById('origem').value = '';
         document.getElementById('destino').value = '';
+        document.getElementById('origem').disabled = true;
+        document.getElementById('destino').disabled = true;
         document.getElementById('distanciaKm').value = '';
         document.getElementById('tempoEstimado').value = '';
+        document.getElementById('distanciaKm').placeholder = 'Aguardando cidades...';
+        document.getElementById('tempoEstimado').placeholder = 'Aguardando cidades...';
         document.getElementById('modalTitulo').textContent = 'Nova Rota';
+        minutosBrutosCalculados = 0;
         modal.show();
     }
 
-    function abrirModalGps() { modalGpsBS.show(); }
+    function abrirModalGps() {
+        document.getElementById('ufGpsOrigem').value = '';
+        document.getElementById('ufGpsDestino').value = '';
+        document.getElementById('gpsOrigem').value = '';
+        document.getElementById('gpsDestino').value = '';
+        document.getElementById('gpsOrigem').disabled = true;
+        document.getElementById('gpsDestino').disabled = true;
+        document.getElementById('resultadoGps').classList.add('d-none');
+        document.getElementById('btnSalvarGps').classList.add('d-none');
+        modalGpsBS.show();
+    }
     function fecharModalGps() { modalGpsBS.hide(); }
 
     async function editar(id) {
         const r = await apiFetch('/rotas/' + id);
         document.getElementById('rotaId').value = r.id;
+        document.getElementById('origem').disabled = false;
+        document.getElementById('destino').disabled = false;
         document.getElementById('origem').value = r.origem;
         document.getElementById('destino').value = r.destino;
         document.getElementById('distanciaKm').value = r.distanciaKm;
-        document.getElementById('tempoEstimado').value = r.tempoEstimado;
+
+        minutosBrutosCalculados = r.tempoEstimado;
+        document.getElementById('tempoEstimado').value = formatarTempoVisivel(r.tempoEstimado);
         document.getElementById('modalTitulo').textContent = 'Editar Rota';
         modal.show();
     }
 
     async function salvar() {
         const id = document.getElementById('rotaId').value;
+        const origem = document.getElementById('origem').value.trim();
+        const destino = document.getElementById('destino').value.trim();
+        const distancia = parseFloat(document.getElementById('distanciaKm').value);
+        const tempo = parseInt(minutosBrutosCalculados);
+
+        if (!origem || !destino) {
+            alert('Selecione a cidade de origem e destino.');
+            return;
+        }
+        if (isNaN(distancia) || isNaN(tempo) || tempo <= 0) {
+            alert('Aguarde o cálculo automático da distância e tempo antes de salvar.');
+            return;
+        }
+
         const body = {
-            origem: document.getElementById('origem').value,
-            destino: document.getElementById('destino').value,
-            distanciaKm: parseFloat(document.getElementById('distanciaKm').value),
-            tempoEstimado: parseInt(document.getElementById('tempoEstimado').value)
+            origem: origem,
+            destino: destino,
+            distanciaKm: distancia,
+            tempoEstimado: tempo // Envia o valor puro em minutos ao banco de dados
         };
         try {
             if (id) {
@@ -229,122 +486,96 @@
         } catch (e) { alert(e.message); }
     }
 
+    // ============ Consulta Dinâmica via GPS com Mapa Real pelas Rodovias ============
     async function consultarGps() {
-    const origem = document.getElementById('gpsOrigem').value.trim();
-    const destino = document.getElementById('gpsDestino').value.trim();
-    if (!origem || !destino) {
-        alert('Informe a origem e o destino');
-        return;
-    }
-
-    const btnBuscar = document.querySelector('#modalGps .btn-primary');
-    btnBuscar.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Buscando...';
-    btnBuscar.disabled = true;
-
-    try {
-        dadosGps = await apiFetch(
-            `/rotas/gps/consultar?origem=${encodeURIComponent(origem)}&destino=${encodeURIComponent(destino)}`
-        );
-
-        document.getElementById('resultadoGps').classList.remove('d-none');
-        document.getElementById('btnSalvarGps').classList.remove('d-none');
-        document.getElementById('infoGps').innerHTML = `
-            <div class="row text-center">
-                <div class="col-3">
-                    <div class="text-muted small">Provedor GPS</div>
-                    <strong class="text-primary">${dadosGps.provider}</strong>
-                </div>
-                <div class="col-3">
-                    <div class="text-muted small">Distância</div>
-                    <strong class="text-success fs-5">${dadosGps.distanciaKm} km</strong>
-                </div>
-                <div class="col-3">
-                    <div class="text-muted small">Tempo estimado</div>
-                    <strong class="text-warning fs-5">${dadosGps.tempoMinutos} min</strong>
-                </div>
-                <div class="col-3">
-                    <div class="text-muted small">Rota</div>
-                    <strong>${dadosGps.origem} → ${dadosGps.destino}</strong>
-                </div>
-            </div>
-        `;
-
-        // Busca coordenadas reais via Nominatim para o mapa
-        const [coordOrigem, coordDestino] = await Promise.all([
-            fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(origem)},Brasil&format=json&limit=1`,
-                { headers: { 'User-Agent': 'GerenciamentoFrotas/1.0' }})
-                .then(r => r.json()),
-            fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(destino)},Brasil&format=json&limit=1`,
-                { headers: { 'User-Agent': 'GerenciamentoFrotas/1.0' }})
-                .then(r => r.json())
-        ]);
-
-        const latO = coordOrigem[0] ? parseFloat(coordOrigem[0].lat) : -15 + Math.random() * 10;
-        const lonO = coordOrigem[0] ? parseFloat(coordOrigem[0].lon) : -50 + Math.random() * 10;
-        const latD = coordDestino[0] ? parseFloat(coordDestino[0].lat) : -20 + Math.random() * 10;
-        const lonD = coordDestino[0] ? parseFloat(coordDestino[0].lon) : -45 + Math.random() * 10;
-
-        if (!mapaGps) {
-            mapaGps = L.map('mapaRota').setView([(latO + latD) / 2, (lonO + lonD) / 2], 7);
-            L.tileLayer(
-                'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-                { attribution: '© CARTO | © OpenStreetMap' }
-            ).addTo(mapaGps);
-        } else {
-            mapaGps.setView([(latO + latD) / 2, (lonO + lonD) / 2], 7);
+        const origem = document.getElementById('gpsOrigem').value.trim();
+        const destino = document.getElementById('gpsDestino').value.trim();
+        if (!origem || !destino) {
+            alert('Selecione a cidade de origem e destino.');
+            return;
         }
 
-        mapaGps.eachLayer(l => {
-            if (l instanceof L.Marker || l instanceof L.Polyline)
-                mapaGps.removeLayer(l);
-        });
+        const btn = document.getElementById('btnConsultarGps');
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Buscando...';
+        btn.disabled = true;
 
-        // Marcadores com ícones personalizados
-        const iconOrigem = L.divIcon({
-            html: '<div style="background:#2e7d32;color:white;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px">A</div>',
-            iconSize: [30, 30], iconAnchor: [15, 15]
-        });
-        const iconDestino = L.divIcon({
-            html: '<div style="background:#c62828;color:white;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px">B</div>',
-            iconSize: [30, 30], iconAnchor: [15, 15]
-        });
+        try {
+            const rota = await obterDadosRotaReal(origem, destino);
 
-        L.marker([latO, lonO], { icon: iconOrigem })
-            .addTo(mapaGps)
-            .bindPopup(`<b>📍 Origem</b><br>${origem}`)
-            .openPopup();
+            dadosGps = {
+                origem: origem,
+                destino: destino,
+                distanciaKm: parseFloat(rota.distanciaKm),
+                tempoMinutos: parseInt(rota.tempoMinutos),
+                provider: "OSRM Rodoviário"
+            };
 
-        L.marker([latD, lonD], { icon: iconDestino })
-            .addTo(mapaGps)
-            .bindPopup(`<b>🏁 Destino</b><br>${destino}`);
+            document.getElementById('resultadoGps').classList.remove('d-none');
+            document.getElementById('btnSalvarGps').classList.remove('d-none');
+            document.getElementById('infoGps').innerHTML = `
+                <div class="row text-center">
+                    <div class="col-3"><div class="text-muted small">Provedor</div>
+                        <strong class="text-primary">${dadosGps.provider}</strong></div>
+                    <div class="col-3"><div class="text-muted small">Distância Real</div>
+                        <strong class="text-success fs-5">${dadosGps.distanciaKm} km</strong></div>
+                    <div class="col-3"><div class="text-muted small">Tempo Estimado</div>
+                        <strong class="text-warning fs-5">${formatarTempoVisivel(dadosGps.tempoMinutos)}</strong></div>
+                    <div class="col-3"><div class="text-muted small">Rota</div>
+                        <strong class="text-truncate d-block">${origem} → ${destino}</strong></div>
+                </div>`;
 
-        // Linha conectando origem e destino
-        L.polyline([[latO, lonO], [latD, lonD]], {
-            color: '#1565c0', weight: 3, dashArray: '8, 8'
-        }).addTo(mapaGps);
+            const { latO, lonO, latD, lonD } = rota.coordenadas;
 
-        // Ajusta zoom para mostrar os dois pontos
-        mapaGps.fitBounds([[latO, lonO], [latD, lonD]], { padding: [40, 40] });
+            if (!mapaGps) {
+                mapaGps = L.map('mapaRota').setView([(latO + latD) / 2, (lonO + lonD) / 2], 7);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+                    { attribution: '© CARTO | © OpenStreetMap' }).addTo(mapaGps);
+            } else {
+                mapaGps.setView([(latO + latD) / 2, (lonO + lonD) / 2], 7);
+            }
 
-    } catch (e) {
-        alert('Erro ao consultar GPS: ' + e.message);
-    } finally {
-        btnBuscar.innerHTML = '<i class="bi bi-search"></i>';
-        btnBuscar.disabled = false;
+            mapaGps.eachLayer(l => {
+                if (l instanceof L.Marker || l instanceof L.GeoJSON || l instanceof L.Polyline) {
+                    mapaGps.removeLayer(l);
+                }
+            });
+
+            const iconO = L.divIcon({ html: '<div style="background:#2e7d32;color:white;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-weight:bold">A</div>', iconSize: [30,30], iconAnchor: [15,15] });
+            const iconD = L.divIcon({ html: '<div style="background:#c62828;color:white;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-weight:bold">B</div>', iconSize: [30,30], iconAnchor: [15,15] });
+
+            L.marker([latO, lonO], { icon: iconO }).addTo(mapaGps).bindPopup(`<b>📍 Origem</b><br>${origem}`).openPopup();
+            L.marker([latD, lonD], { icon: iconD }).addTo(mapaGps).bindPopup(`<b>🏁 Destino</b><br>${destino}`);
+
+            const camadaRotaReal = L.geoJSON(rota.geometry, {
+                style: { color: '#1565c0', weight: 4, opacity: 0.8 }
+            }).addTo(mapaGps);
+
+            mapaGps.fitBounds(camadaRotaReal.getBounds(), { padding: [40, 40] });
+            setTimeout(() => mapaGps.invalidateSize(), 200);
+
+        } catch (e) {
+            alert('Erro ao consultar GPS Real: ' + e.message);
+        } finally {
+            btn.innerHTML = '<i class="bi bi-search me-1"></i>Consultar GPS';
+            btn.disabled = false;
+        }
     }
-}
 
     async function salvarRotaGps() {
-        const origem = document.getElementById('gpsOrigem').value;
-        const destino = document.getElementById('gpsDestino').value;
+        if(!dadosGps) return;
         try {
-            await apiFetch(
-                `/rotas/gps?origem=${encodeURIComponent(origem)}&destino=${encodeURIComponent(destino)}`,
-                { method: 'POST' }
-            );
+            await apiFetch('/rotas', {
+                method: 'POST',
+                body: JSON.stringify({
+                    origem: dadosGps.origem,
+                    destino: dadosGps.destino,
+                    distanciaKm: dadosGps.distanciaKm,
+                    tempoEstimado: dadosGps.tempoMinutos
+                })
+            });
             fecharModalGps();
             carregar(paginaAtual);
-            alert('Rota criada com GPS!');
+            alert('Rota criada com GPS real com sucesso!');
         } catch (e) { alert(e.message); }
     }
 
@@ -356,6 +587,8 @@
         } catch (e) { alert(e.message); }
     }
 
+    // Inicialização
+    carregarEstados();
     carregar();
 </script>
 </body>

@@ -17,8 +17,9 @@
         .card-stat { border-radius: 12px; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
         #mapa { height: 380px; width: 100%; border-radius: 8px; }
         .topbar { background: #fff; border-radius: 12px; padding: 12px 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }
-        .card-viagem { border-radius: 10px; border: 1px solid #e0e0e0; padding: 12px; margin-bottom: 10px; background: #fff; transition: box-shadow 0.2s; }
-        .card-viagem:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+        .card-viagem { border-radius: 10px; border: 1px solid #e0e0e0; padding: 12px; margin-bottom: 10px; background: #fff; transition: all 0.2s; cursor: pointer; }
+        .card-viagem:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.12); background: #f9f9f9; }
+        .card-viagem.ativa { border: 2px solid #1565c0; background: #e3f2fd; }
         .relogio-box { background: #1b5e20; color: white; border-radius: 12px; padding: 8px 16px; text-align: center; min-width: 200px; }
         .relogio-hora { font-size: 1.7rem; font-weight: bold; letter-spacing: 3px; font-family: 'Courier New', monospace; }
         .relogio-data { font-size: 0.75rem; opacity: 0.85; margin-top: 2px; }
@@ -94,14 +95,17 @@
                 <h6 class="fw-bold mb-3"><i class="bi bi-map me-2 text-success"></i>Mapa de Rotas</h6>
                 <div id="mapa"></div>
                 <div class="mt-2 d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-warning" onclick="mostrarTodasViagens()"><i class="bi bi-grid-3x3-gap me-1"></i>Mostrar todas</button>
                     <button class="btn btn-sm btn-outline-success" onclick="usarLeaflet()"><i class="bi bi-map me-1"></i>Leaflet</button>
                     <button class="btn btn-sm btn-outline-primary" onclick="usarCarto()"><i class="bi bi-globe me-1"></i>CARTO</button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="limparMapa(true)"><i class="bi bi-x-circle me-1"></i>Limpar</button>
                 </div>
             </div>
         </div>
         <div class="col-md-5">
             <div class="card p-3" style="border-radius:12px;border:none;box-shadow:0 2px 8px rgba(0,0,0,0.08);height:100%">
                 <h6 class="fw-bold mb-3"><i class="bi bi-signpost-split me-2 text-warning"></i>Viagens Ativas</h6>
+                <div class="text-muted small mb-2"><i class="bi bi-hand-index me-1"></i>Clique numa viagem para ver no mapa</div>
                 <div id="listaViagensAtivas" style="max-height:400px;overflow-y:auto">
                     <div class="text-center py-3">
                         <span class="spinner-border text-warning"></span>
@@ -112,29 +116,112 @@
         </div>
     </div>
 
+    <div class="row g-3 mb-3">
+        <div class="col-md-4">
+            <div class="card p-3 h-100" style="border-radius:12px;border:none;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
+                <h6 class="fw-bold mb-3"><i class="bi bi-pie-chart me-2 text-success"></i>Status da Frota</h6>
+                <canvas id="graficoFrota" height="200"></canvas>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-3 h-100" style="border-radius:12px;border:none;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
+                <h6 class="fw-bold mb-3"><i class="bi bi-bar-chart me-2 text-warning"></i>Viagens</h6>
+                <canvas id="graficoViagens" height="200"></canvas>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-3 h-100" style="border-radius:12px;border:none;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
+                <h6 class="fw-bold mb-3"><i class="bi bi-cash-stack me-2 text-info"></i>Custo por Viagem Ativa</h6>
+                <canvas id="graficoCustos" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
     <div class="card p-3" style="border-radius:12px;border:none;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
         <h6 class="fw-bold mb-3"><i class="bi bi-file-earmark-text me-2 text-danger"></i>Relatórios</h6>
         <div class="d-flex gap-2 flex-wrap">
-            <button onclick="baixarRelatorio('/api/relatorios/viagens/pdf','relatorio-viagens.pdf')" class="btn btn-outline-danger btn-sm"><i class="bi bi-file-pdf me-1"></i>Viagens PDF</button>
-            <button onclick="baixarRelatorio('/api/relatorios/veiculos/pdf','relatorio-veiculos.pdf')" class="btn btn-outline-danger btn-sm"><i class="bi bi-file-pdf me-1"></i>Veículos PDF</button>
-            <button onclick="baixarRelatorio('/api/relatorios/motoristas/pdf','relatorio-motoristas.pdf')" class="btn btn-outline-danger btn-sm"><i class="bi bi-file-pdf me-1"></i>Motoristas PDF</button>
-            <button onclick="baixarRelatorio('/api/relatorios/viagens/excel','relatorio-viagens.xlsx')" class="btn btn-outline-success btn-sm"><i class="bi bi-file-excel me-1"></i>Viagens Excel</button>
-            <button onclick="baixarRelatorio('/api/relatorios/veiculos/excel','relatorio-veiculos.xlsx')" class="btn btn-outline-success btn-sm"><i class="bi bi-file-excel me-1"></i>Veículos Excel</button>
-            <button onclick="baixarRelatorio('/api/relatorios/motoristas/excel','relatorio-motoristas.xlsx')" class="btn btn-outline-success btn-sm"><i class="bi bi-file-excel me-1"></i>Motoristas Excel</button>
+            <button onclick="baixarRelatorio('viagens','pdf')" class="btn btn-outline-danger btn-sm"><i class="bi bi-file-pdf me-1"></i>Viagens PDF</button>
+            <button onclick="baixarRelatorio('veiculos','pdf')" class="btn btn-outline-danger btn-sm"><i class="bi bi-file-pdf me-1"></i>Veículos PDF</button>
+            <button onclick="baixarRelatorio('motoristas','pdf')" class="btn btn-outline-danger btn-sm"><i class="bi bi-file-pdf me-1"></i>Motoristas PDF</button>
+            <button onclick="baixarRelatorio('viagens','excel')" class="btn btn-outline-success btn-sm"><i class="bi bi-file-excel me-1"></i>Viagens Excel</button>
+            <button onclick="baixarRelatorio('veiculos','excel')" class="btn btn-outline-success btn-sm"><i class="bi bi-file-excel me-1"></i>Veículos Excel</button>
+            <button onclick="baixarRelatorio('motoristas','excel')" class="btn btn-outline-success btn-sm"><i class="bi bi-file-excel me-1"></i>Motoristas Excel</button>
         </div>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/js/api.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
 <script>
+    const API_BASE_URL = 'http://localhost:8080';
+
+    let mapa = null;
+    let tileAtual = null;
+    let camadasViagem = [];          // marcadores + linha da viagem exibida
+    let viagensCarregadas = [];      // dados das viagens ativas
+    let viagemSelecionadaId = null;
+
+    function getToken() {
+        return localStorage.getItem('token') || '';
+    }
+
+    function getUsuario() {
+        const userData = localStorage.getItem('userData');
+        return userData ? JSON.parse(userData) : { nome: 'Usuário' };
+    }
+
+    function checkAuth() {
+        const token = getToken();
+        if (!token) {
+            window.location.href = '/index.html';
+            return false;
+        }
+        return true;
+    }
+
+    function logout() {
+        localStorage.removeItem('token');
+        localStorage.removeItem('userData');
+        window.location.href = '/index.html';
+    }
+
+    function apiFetch(path, options = {}) {
+        const token = getToken();
+        const headers = {
+            'Content-Type': 'application/json',
+            ...options.headers
+        };
+
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        return fetch(`${API_BASE_URL}${path}`, {
+            ...options,
+            headers
+        })
+        .then(response => {
+            if (response.status === 401) {
+                localStorage.removeItem('token');
+                window.location.href = '/index.html';
+                throw new Error('Sessão expirada');
+            }
+            return response.json().catch(() => ({}));
+        })
+        .catch(error => {
+            console.error('Erro na requisição:', error);
+            throw error;
+        });
+    }
+
     checkAuth();
     document.getElementById('nomeUsuario').textContent = 'Olá, ' + (getUsuario().nome || 'Usuário');
 
-    // RELÓGIO
-    const diasSemana = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+    const diasSemana = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
     const mesesNome = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
     function atualizarRelogio() {
         const now = new Date();
         const h = String(now.getHours()).padStart(2,'0');
@@ -144,19 +231,19 @@
         document.getElementById('relogioData').textContent =
             diasSemana[now.getDay()] + ', ' + now.getDate() + ' de ' + mesesNome[now.getMonth()] + ' de ' + now.getFullYear();
     }
+
     atualizarRelogio();
     setInterval(atualizarRelogio, 1000);
 
-    // MAPA
-    let mapa = null;
-    let tileAtual = null;
     window.addEventListener('load', function() {
         setTimeout(() => {
             mapa = L.map('mapa').setView([-15.7801, -47.9292], 4);
             tileAtual = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
                 { attribution: '© OpenStreetMap | Leaflet' }).addTo(mapa);
             mapa.invalidateSize();
+            carregarStats();
             carregarViagensAtivas();
+            carregarGraficos();
         }, 300);
     });
 
@@ -166,6 +253,7 @@
         tileAtual = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
             { attribution: '© OpenStreetMap | Leaflet' }).addTo(mapa);
     }
+
     function usarCarto() {
         if (!mapa) return;
         if (tileAtual) mapa.removeLayer(tileAtual);
@@ -173,134 +261,370 @@
             { attribution: '© CARTO | © OpenStreetMap' }).addTo(mapa);
     }
 
-    // DOWNLOAD COM AUTH
-    async function baixarRelatorio(path, nomeArquivo) {
-        try {
-            const res = await fetch('http://localhost:8080' + path, {
-                headers: { 'Authorization': 'Bearer ' + getToken() }
-            });
-            if (!res.ok) throw new Error('Erro ao gerar relatório (status ' + res.status + ')');
-            const blob = await res.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = nomeArquivo;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            window.URL.revokeObjectURL(url);
-        } catch (e) {
-            alert('Erro ao baixar: ' + e.message);
-        }
+    function baixarRelatorio(tipo, formato) {
+        const token = getToken();
+        const url = `${API_BASE_URL}/api/relatorios/${tipo}/${formato}`;
+
+        fetch(url, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error(`Erro ${response.status}`);
+            return response.blob();
+        })
+        .then(blob => {
+            const link = document.createElement('a');
+            const ext = formato === 'pdf' ? 'pdf' : 'xlsx';
+            link.href = window.URL.createObjectURL(blob);
+            link.download = `relatorio-${tipo}-${Date.now()}.${ext}`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(link.href);
+        })
+        .catch(error => {
+            alert('Erro ao baixar: ' + error.message);
+        });
     }
 
-    // STATS
     async function carregarStats() {
         try {
-            const opts = { headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() } };
+            const token = getToken();
+            const opts = { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } };
+
             const [v, m, r, va] = await Promise.all([
-                fetch('http://localhost:8080/api/veiculos?size=1', opts).then(r => r.json()),
-                fetch('http://localhost:8080/api/motoristas?size=1', opts).then(r => r.json()),
-                fetch('http://localhost:8080/api/rotas?size=1', opts).then(r => r.json()),
-                fetch('http://localhost:8080/api/viagens/ativas?size=1', opts).then(r => r.json())
+                fetch(`${API_BASE_URL}/api/veiculos?page=0&size=1`, opts).then(r => r.json()),
+                fetch(`${API_BASE_URL}/api/motoristas?page=0&size=1`, opts).then(r => r.json()),
+                fetch(`${API_BASE_URL}/api/rotas?page=0&size=1`, opts).then(r => r.json()),
+                fetch(`${API_BASE_URL}/api/viagens/ativas?page=0&size=1`, opts).then(r => r.json())
             ]);
+
             document.getElementById('totalVeiculos').textContent = v.totalElements ?? '0';
             document.getElementById('totalMotoristas').textContent = m.totalElements ?? '0';
             document.getElementById('totalRotas').textContent = r.totalElements ?? '0';
             document.getElementById('totalAtivas').textContent = va.totalElements ?? '0';
         } catch (e) {
-            ['totalVeiculos','totalMotoristas','totalRotas','totalAtivas'].forEach(id => document.getElementById(id).textContent = '—');
+            console.error('Erro ao carregar stats:', e);
+            ['totalVeiculos','totalMotoristas','totalRotas','totalAtivas'].forEach(id =>
+                document.getElementById(id).textContent = '—'
+            );
         }
     }
 
-    // MARCADORES COM ROTA REAL
-    async function adicionarMarcadoresViagem(v) {
-        if (!mapa) return;
-        const iconA = L.divIcon({ html: `<div style="background:#2e7d32;color:white;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:13px;box-shadow:0 2px 6px rgba(0,0,0,0.4);border:2px solid white">A</div>`, iconSize:[30,30], iconAnchor:[15,15] });
-        const iconB = L.divIcon({ html: `<div style="background:#c62828;color:white;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:13px;box-shadow:0 2px 6px rgba(0,0,0,0.4);border:2px solid white">B</div>`, iconSize:[30,30], iconAnchor:[15,15] });
-        const iconT = L.divIcon({ html: `<div style="background:#e65100;color:white;border-radius:8px;padding:3px 7px;font-size:18px;box-shadow:0 2px 6px rgba(0,0,0,0.4)">🚛</div>`, iconSize:[38,30], iconAnchor:[19,15] });
+    // ================= GRÁFICOS (Chart.js) =================
+    let chartFrota = null, chartViagens = null, chartCustos = null;
 
+    async function carregarGraficos() {
         try {
-            const geometria = await apiFetch(
-                `/rotas/gps/geometria?origem=${encodeURIComponent(v.rota.origem)}&destino=${encodeURIComponent(v.rota.destino)}`
-            );
-            if (geometria && geometria.length > 1) {
-                const primeiro = geometria[0];
-                const ultimo = geometria[geometria.length - 1];
-                const meio = geometria[Math.floor(geometria.length / 2)];
+            const token = getToken();
+            const opts = { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } };
 
-                L.marker(primeiro, {icon: iconA}).addTo(mapa).bindPopup(`<b>📍 Origem</b><br>${v.rota.origem}`);
-                L.marker(ultimo, {icon: iconB}).addTo(mapa).bindPopup(`<b>🏁 Destino</b><br>${v.rota.destino}`);
-                L.marker(meio, {icon: iconT}).addTo(mapa).bindPopup(`<b>🚛 ${v.veiculo.placa}</b><br>👤 ${v.motorista.nome}<br>📍 ${v.rota.origem} → ${v.rota.destino}<br>💰 R$ ${v.custoCalculado?.toFixed(2)||'—'}`);
+            // Busca todos os veículos e todas as viagens (página grande)
+            const [veiculos, viagens, ativas] = await Promise.all([
+                fetch(`${API_BASE_URL}/api/veiculos?page=0&size=1000`, opts).then(r => r.json()),
+                fetch(`${API_BASE_URL}/api/viagens?page=0&size=1000`, opts).then(r => r.json()),
+                fetch(`${API_BASE_URL}/api/viagens/ativas?page=0&size=1000`, opts).then(r => r.json())
+            ]);
 
-                const rotaLayer = L.polyline(geometria, { color:'#1565c0', weight:4, opacity:0.85 }).addTo(mapa);
-                mapa.fitBounds(rotaLayer.getBounds(), { padding:[40,40] });
-            } else {
-                throw new Error('Geometria vazia');
-            }
-        } catch(err) {
-            console.warn('Rota real falhou, usando fallback:', err.message);
-            try {
-                const [cO, cD] = await Promise.all([geocodificarCidade(v.rota.origem), geocodificarCidade(v.rota.destino)]);
-                if (cO && cD) {
-                    L.marker([cO.lat, cO.lon], {icon: iconA}).addTo(mapa).bindPopup(`<b>📍 Origem</b><br>${v.rota.origem}`);
-                    L.marker([cD.lat, cD.lon], {icon: iconB}).addTo(mapa).bindPopup(`<b>🏁 Destino</b><br>${v.rota.destino}`);
-                    L.marker([(cO.lat+cD.lat)/2,(cO.lon+cD.lon)/2], {icon: iconT}).addTo(mapa).bindPopup(`<b>🚛 ${v.veiculo.placa}</b>`);
-                    L.polyline([[cO.lat,cO.lon],[cD.lat,cD.lon]], {color:'#1565c0',weight:3,dashArray:'8,6',opacity:0.8}).addTo(mapa);
-                    mapa.fitBounds([[cO.lat,cO.lon],[cD.lat,cD.lon]], {padding:[60,60]});
+            const listaVeiculos = veiculos.content || [];
+            const listaViagens = viagens.content || [];
+            const listaAtivas = ativas.content || [];
+
+            // ---- 1. Status da Frota (rosca) ----
+            const statusCount = {};
+            listaVeiculos.forEach(v => {
+                const s = v.status || 'INDEFINIDO';
+                statusCount[s] = (statusCount[s] || 0) + 1;
+            });
+            const statusLabels = Object.keys(statusCount);
+            const statusCores = {
+                DISPONIVEL: '#2e7d32',
+                EM_VIAGEM: '#1565c0',
+                MANUTENCAO: '#e65100',
+                INATIVO: '#757575',
+                INDEFINIDO: '#bdbdbd'
+            };
+
+            if (chartFrota) chartFrota.destroy();
+            chartFrota = new Chart(document.getElementById('graficoFrota'), {
+                type: 'doughnut',
+                data: {
+                    labels: statusLabels,
+                    datasets: [{
+                        data: statusLabels.map(s => statusCount[s]),
+                        backgroundColor: statusLabels.map(s => statusCores[s] || '#90a4ae'),
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { font: { size: 11 } } }
+                    }
                 }
-            } catch(e2) { console.error('Fallback falhou:', e2); }
+            });
+
+            // ---- 2. Viagens: ativas vs finalizadas (rosca) ----
+            const totalViagens = viagens.totalElements ?? listaViagens.length;
+            const qtdAtivas = ativas.totalElements ?? listaAtivas.length;
+            const qtdFinalizadas = Math.max(totalViagens - qtdAtivas, 0);
+
+            if (chartViagens) chartViagens.destroy();
+            chartViagens = new Chart(document.getElementById('graficoViagens'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Em andamento', 'Finalizadas'],
+                    datasets: [{
+                        data: [qtdAtivas, qtdFinalizadas],
+                        backgroundColor: ['#ffa000', '#2e7d32'],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { font: { size: 11 } } }
+                    }
+                }
+            });
+
+            // ---- 3. Custo por viagem ativa (barras) ----
+            const labelsCusto = listaAtivas.map(v => v.veiculo?.placa || ('#' + v.id));
+            const dadosCusto = listaAtivas.map(v => Number(v.custoCalculado) || 0);
+
+            // Formatador de moeda brasileira (R$ 1.187,88)
+            const fmtBRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+
+            if (chartCustos) chartCustos.destroy();
+            chartCustos = new Chart(document.getElementById('graficoCustos'), {
+                type: 'bar',
+                data: {
+                    labels: labelsCusto.length ? labelsCusto : ['Sem viagens'],
+                    datasets: [{
+                        label: 'Custo',
+                        data: dadosCusto.length ? dadosCusto : [0],
+                        backgroundColor: '#0097a7',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => fmtBRL.format(ctx.parsed.y)
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: v => fmtBRL.format(v).replace(/\s/g, ' ')
+                            }
+                        }
+                    }
+                }
+            });
+
+        } catch (e) {
+            console.error('Erro ao carregar gráficos:', e);
         }
     }
 
     async function geocodificarCidade(cidade) {
         try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cidade)},Brasil&format=json&limit=1`, { headers:{'User-Agent':'GerenciamentoFrotas/1.0'} });
+            const res = await fetch(
+                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cidade)},Brasil&format=json&limit=1`,
+                { headers:{'User-Agent':'GerenciamentoFrotas/1.0'} }
+            );
             const data = await res.json();
-            if (data && data.length > 0) return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
-        } catch(e) {}
+            if (data && data.length > 0) {
+                return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+            }
+        } catch(e) {
+            console.warn('Geocodificação falhou:', e);
+        }
         return null;
     }
 
-    // VIAGENS ATIVAS
-    async function carregarViagensAtivas() {
-        try {
-            const data = await apiFetch('/viagens/ativas?size=10');
-            const el = document.getElementById('listaViagensAtivas');
-            if (!data.content || data.content.length === 0) {
-                el.innerHTML = `<div class="text-center text-muted py-4"><i class="bi bi-inbox fs-2 d-block mb-2"></i>Nenhuma viagem ativa no momento</div>`;
-                return;
-            }
-            el.innerHTML = data.content.map(v => `
-                <div class="card-viagem">
-                    <span class="badge bg-warning text-dark mb-2">Em andamento</span>
-                    <div class="fw-semibold"><i class="bi bi-truck me-1 text-success"></i>${v.veiculo.placa} — ${v.veiculo.tipo}</div>
-                    <div class="text-muted small mt-1"><i class="bi bi-person me-1"></i>${v.motorista.nome}</div>
-                    <div class="text-muted small"><i class="bi bi-geo-alt me-1 text-success"></i>${v.rota.origem} <i class="bi bi-arrow-right mx-1"></i><i class="bi bi-geo-alt-fill me-1 text-danger"></i>${v.rota.destino}</div>
-                    <div class="text-muted small"><i class="bi bi-cash me-1"></i>Custo: <strong>R$ ${v.custoCalculado?.toFixed(2)||'—'}</strong></div>
-                    <button class="btn btn-sm btn-warning w-100 mt-2 fw-semibold" onclick="finalizarViagem(${v.id})"><i class="bi bi-flag-fill me-1"></i>Finalizar Viagem</button>
-                </div>
-            `).join('');
-            for (const v of data.content) await adicionarMarcadoresViagem(v);
-        } catch(e) {
-            document.getElementById('listaViagensAtivas').innerHTML = `<div class="alert alert-danger small"><i class="bi bi-exclamation-triangle me-1"></i>Erro: ${e.message}</div>`;
+    // Remove só as camadas da viagem (marcadores e linha), mantém o tile base
+    function limparMapa(resetView) {
+        camadasViagem.forEach(l => {
+            if (mapa.hasLayer(l)) mapa.removeLayer(l);
+        });
+        camadasViagem = [];
+        viagemSelecionadaId = null;
+        document.querySelectorAll('.card-viagem').forEach(c => c.classList.remove('ativa'));
+        if (resetView && mapa) {
+            mapa.setView([-15.7801, -47.9292], 4);
         }
     }
 
-    async function finalizarViagem(id) {
-        if (!confirm(`Finalizar viagem #${id}?\n\nVeículo e motorista serão liberados.`)) return;
-        try {
-            await apiFetch('/viagens/'+id+'/finalizar', {method:'PATCH'});
-            if (mapa) {
-                mapa.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) mapa.removeLayer(l); });
-                mapa.setView([-15.7801, -47.9292], 4);
-            }
-            await carregarStats();
-            await carregarViagensAtivas();
-        } catch(e) { alert('Erro ao finalizar: '+e.message); }
+    // Paleta de cores para diferenciar viagens no mapa
+    const CORES_VIAGEM = ['#1565c0', '#c62828', '#2e7d32', '#6a1b9a', '#e65100', '#00838f', '#ad1457', '#4527a0'];
+
+    function iconesViagem(cor) {
+        const corMarcador = cor || '#2e7d32';
+        return {
+            A: L.divIcon({
+                html: `<div style="background:${corMarcador};color:white;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:13px;box-shadow:0 2px 6px rgba(0,0,0,0.4);border:2px solid white">A</div>`,
+                iconSize:[30,30], iconAnchor:[15,15]
+            }),
+            B: L.divIcon({
+                html: `<div style="background:${corMarcador};color:white;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:13px;box-shadow:0 2px 6px rgba(0,0,0,0.4);border:2px solid white">B</div>`,
+                iconSize:[30,30], iconAnchor:[15,15]
+            }),
+            T: L.divIcon({
+                html: `<div style="background:#e65100;color:white;border-radius:8px;padding:3px 7px;font-size:18px;box-shadow:0 2px 6px rgba(0,0,0,0.4)">🚛</div>`,
+                iconSize:[38,30], iconAnchor:[19,15]
+            })
+        };
     }
 
-    carregarStats();
+    // Desenha UMA viagem no mapa. Retorna os pontos (lat/lon) usados, para
+    // quem chamou poder ajustar o zoom. NÃO limpa o mapa nem dá fitBounds.
+    async function desenharViagem(v, abrirPopup, cor) {
+        const corLinha = cor || '#1565c0';
+        const ic = iconesViagem(corLinha);
+        let pontos = [];
+
+        // Tenta rota real (geometria do backend)
+        try {
+            const geometria = await apiFetch(
+                `/api/rotas/gps/geometria?origem=${encodeURIComponent(v.rota.origem)}&destino=${encodeURIComponent(v.rota.destino)}`
+            );
+
+            if (geometria && Array.isArray(geometria) && geometria.length > 1) {
+                const primeiro = geometria[0];
+                const ultimo = geometria[geometria.length - 1];
+                const meio = geometria[Math.floor(geometria.length / 2)];
+
+                const mA = L.marker(primeiro, {icon: ic.A}).addTo(mapa).bindPopup(`<b>📍 Origem</b><br>${v.rota.origem}`);
+                const mB = L.marker(ultimo, {icon: ic.B}).addTo(mapa).bindPopup(`<b>🏁 Destino</b><br>${v.rota.destino}`);
+                const mT = L.marker(meio, {icon: ic.T}).addTo(mapa).bindPopup(`<b>🚛 ${v.veiculo.placa}</b><br>👤 ${v.motorista.nome}<br>${v.rota.origem} → ${v.rota.destino}`);
+                if (abrirPopup) mT.openPopup();
+                const linha = L.polyline(geometria, { color:corLinha, weight:4, opacity:0.85 }).addTo(mapa);
+
+                camadasViagem.push(mA, mB, mT, linha);
+                pontos = geometria;
+                return pontos;
+            }
+        } catch(err) {
+            console.warn('Rota real falhou, usando fallback:', err);
+        }
+
+        // Fallback: Nominatim + linha reta
+        try {
+            const [cO, cD] = await Promise.all([geocodificarCidade(v.rota.origem), geocodificarCidade(v.rota.destino)]);
+            if (cO && cD) {
+                const mA = L.marker([cO.lat, cO.lon], {icon: ic.A}).addTo(mapa).bindPopup(`<b>📍 Origem</b><br>${v.rota.origem}`);
+                const mB = L.marker([cD.lat, cD.lon], {icon: ic.B}).addTo(mapa).bindPopup(`<b>🏁 Destino</b><br>${v.rota.destino}`);
+                const mT = L.marker([(cO.lat+cD.lat)/2,(cO.lon+cD.lon)/2], {icon: ic.T}).addTo(mapa).bindPopup(`<b>🚛 ${v.veiculo.placa}</b><br>${v.rota.origem} → ${v.rota.destino}`);
+                if (abrirPopup) mT.openPopup();
+                const linha = L.polyline([[cO.lat,cO.lon],[cD.lat,cD.lon]], {color:corLinha,weight:3,dashArray:'8,6'}).addTo(mapa);
+
+                camadasViagem.push(mA, mB, mT, linha);
+                pontos = [[cO.lat,cO.lon],[cD.lat,cD.lon]];
+            }
+        } catch(e2) {
+            console.error('Fallback falhou:', e2);
+        }
+        return pontos;
+    }
+
+    // Desenha no mapa SOMENTE a viagem recebida
+    async function mostrarViagemNoMapa(v) {
+        if (!mapa) return;
+        limparMapa(false);
+        viagemSelecionadaId = v.id;
+
+        const pontos = await desenharViagem(v, true, '#1565c0');
+        if (pontos.length > 0) {
+            mapa.fitBounds(L.latLngBounds(pontos), { padding:[40,40] });
+        }
+    }
+
+    // Desenha TODAS as viagens ativas no mapa, cada uma com cor própria
+    async function mostrarTodasViagens() {
+        if (!mapa) return;
+        limparMapa(false);
+        viagemSelecionadaId = null;
+        document.querySelectorAll('.card-viagem').forEach(c => c.classList.remove('ativa'));
+
+        if (viagensCarregadas.length === 0) return;
+
+        let todosPontos = [];
+        for (let i = 0; i < viagensCarregadas.length; i++) {
+            const v = viagensCarregadas[i];
+            const cor = CORES_VIAGEM[i % CORES_VIAGEM.length];
+            const pontos = await desenharViagem(v, false, cor);
+            todosPontos = todosPontos.concat(pontos);
+        }
+
+        if (todosPontos.length > 0) {
+            mapa.fitBounds(L.latLngBounds(todosPontos), { padding:[40,40] });
+        }
+    }
+
+    // Chamado pelo clique no card
+    function selecionarViagem(idx, elemento) {
+        const v = viagensCarregadas[idx];
+        if (!v) return;
+        document.querySelectorAll('.card-viagem').forEach(c => c.classList.remove('ativa'));
+        elemento.classList.add('ativa');
+        mostrarViagemNoMapa(v);
+    }
+
+    async function carregarViagensAtivas() {
+        try {
+            const data = await apiFetch('/api/viagens/ativas?page=0&size=10');
+            const el = document.getElementById('listaViagensAtivas');
+
+            viagensCarregadas = data.content || [];
+
+            if (viagensCarregadas.length === 0) {
+                el.innerHTML = `<div class="text-center text-muted py-4"><i class="bi bi-inbox fs-2 d-block mb-2"></i>Nenhuma viagem ativa</div>`;
+                return;
+            }
+
+            el.innerHTML = viagensCarregadas.map((v, idx) => `
+                <div class="card-viagem ${viagemSelecionadaId === v.id ? 'ativa' : ''}" onclick="selecionarViagem(${idx}, this)">
+                    <span class="badge bg-warning text-dark mb-2">Em andamento</span>
+                    <div class="fw-semibold"><i class="bi bi-truck me-1 text-success"></i>${v.veiculo.placa}</div>
+                    <div class="text-muted small"><i class="bi bi-person me-1"></i>${v.motorista.nome}</div>
+                    <div class="text-muted small"><i class="bi bi-geo-alt me-1"></i>${v.rota.origem} → ${v.rota.destino}</div>
+                    <div class="d-flex justify-content-between mt-1">
+                        <span class="text-muted small"><i class="bi bi-signpost me-1"></i>${v.rota.distanciaKm != null ? v.rota.distanciaKm + ' km' : '—'}</span>
+                        <span class="fw-semibold text-success small"><i class="bi bi-cash-coin me-1"></i>${v.custoCalculado != null ? 'R$ ' + Number(v.custoCalculado).toFixed(2) : '—'}</span>
+                    </div>
+                    <button class="btn btn-sm btn-warning w-100 mt-2" onclick="finalizarViagem(event, ${v.id})"><i class="bi bi-flag-fill me-1"></i>Finalizar</button>
+                </div>
+            `).join('');
+
+        } catch(e) {
+            console.error('Erro ao carregar viagens:', e);
+            document.getElementById('listaViagensAtivas').innerHTML = `<div class="alert alert-danger small">Erro: ${e.message}</div>`;
+        }
+    }
+
+    async function finalizarViagem(event, id) {
+        event.stopPropagation();   // não dispara o clique do card
+        if (!confirm(`Finalizar viagem #${id}?`)) return;
+        try {
+            await apiFetch(`/api/viagens/${id}/finalizar`, {method:'PATCH'});
+            limparMapa(true);
+            await carregarStats();
+            await carregarViagensAtivas();
+            await carregarGraficos();
+        } catch(e) {
+            alert('Erro: '+e.message);
+        }
+    }
+
 </script>
 </body>
 </html>
