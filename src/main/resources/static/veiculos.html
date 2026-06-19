@@ -75,6 +75,7 @@
                 <h5 class="modal-title" id="modalTitulo">Novo Veículo</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
+
             <div class="modal-body">
                 <div id="erroModal"></div>
                 <input type="hidden" id="veiculoId">
@@ -90,6 +91,7 @@
                         <input type="text" id="placa" class="form-control" placeholder="Ex: ABC-1234">
                         <div class="dica">Placa no formato ABC-1234 ou ABC1D23</div>
                     </div>
+
                     <div class="col-md-6">
                         <label class="form-label">Tipo <span class="text-danger">*</span></label>
                         <select id="tipo" class="form-select" onchange="mostrarCampos()">
@@ -100,25 +102,40 @@
                         </select>
                         <div class="dica">Selecione o tipo do veículo</div>
                     </div>
+
                     <div class="col-12">
                         <label class="form-label">Descrição <span class="text-danger">*</span></label>
                         <input type="text" id="descricao" class="form-control" placeholder="Ex: Caminhão baú frigorificado">
                         <div class="dica">Descreva o veículo brevemente</div>
                     </div>
+
                     <div class="col-md-6">
                         <label class="form-label">Chassi <span class="text-danger">*</span></label>
                         <input type="text" id="chassi" class="form-control" placeholder="Ex: 9BWZZZ377VT004251">
                         <div class="dica">Número do chassi (17 caracteres)</div>
                     </div>
+
                     <div class="col-md-3">
                         <label class="form-label">Ano <span class="text-danger">*</span></label>
                         <input type="number" id="ano" class="form-control" value="2020" min="1990" max="2030">
                         <div class="dica">Ano de fabricação</div>
                     </div>
+
                     <div class="col-md-3">
                         <label class="form-label">Capacidade (kg) <span class="text-danger">*</span></label>
                         <input type="number" id="capacidadeKg" class="form-control" placeholder="Ex: 15000">
                         <div class="dica">Carga máxima em kg</div>
+                    </div>
+
+                    <!-- Status aparece apenas ao editar -->
+                    <div id="campoStatus" class="col-md-6 d-none">
+                        <label class="form-label">Status do Veículo</label>
+                        <select id="status" class="form-select">
+                            <option value="DISPONIVEL">Disponível</option>
+                            <option value="MANUTENCAO">Em manutenção</option>
+                            <option value="INATIVO">Inativo</option>
+                        </select>
+                        <div class="dica">Altere o status atual do veículo</div>
                     </div>
 
                     <!-- Campos específicos por tipo -->
@@ -126,6 +143,7 @@
                         <label class="form-label">Marca</label>
                         <input type="text" id="marca" class="form-control" placeholder="Ex: Volvo, Mercedes, Scania">
                     </div>
+
                     <div id="camposTipoCaminhao" class="col-md-6 d-none">
                         <label class="form-label">Tipo do Caminhão</label>
                         <select id="tipoCaminhao" class="form-select">
@@ -138,14 +156,17 @@
                             <option value="OUTRO">Outro</option>
                         </select>
                     </div>
+
                     <div id="camposEixos" class="col-md-6 d-none">
                         <label class="form-label">Número de Eixos</label>
                         <input type="number" id="numeroEixos" class="form-control" placeholder="Ex: 3" min="1" max="9">
                     </div>
+
                     <div id="camposAssentos" class="col-md-6 d-none">
                         <label class="form-label">Quantidade de Assentos</label>
                         <input type="number" id="quantidadeAssentos" class="form-control" placeholder="Ex: 5" min="1">
                     </div>
+
                     <div id="camposTipoReboque" class="col-md-6 d-none">
                         <label class="form-label">Tipo do Reboque</label>
                         <select id="tipoReboque" class="form-select">
@@ -159,6 +180,7 @@
                     </div>
                 </div>
             </div>
+
             <div class="modal-footer">
                 <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                 <button class="btn btn-success" onclick="salvar()">
@@ -171,14 +193,17 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/js/api.js"></script>
+
 <script>
     checkAuth();
+
     let paginaAtual = 0;
     const modal = new bootstrap.Modal(document.getElementById('modal'));
 
     function mostrarCampos() {
         const tipo = document.getElementById('tipo').value;
-        ['camposMarca','camposTipoCaminhao','camposEixos','camposAssentos','camposTipoReboque']
+
+        ['camposMarca', 'camposTipoCaminhao', 'camposEixos', 'camposAssentos', 'camposTipoReboque']
             .forEach(id => document.getElementById(id).classList.add('d-none'));
 
         if (tipo === 'CAMINHAO') {
@@ -197,7 +222,9 @@
     async function carregar(page = 0) {
         try {
             const data = await apiFetch(`/veiculos?page=${page}&size=10&sort=id`);
+
             paginaAtual = page;
+
             document.getElementById('tabela').innerHTML = data.content.map(v => `
                 <tr>
                     <td>${v.id}</td>
@@ -212,10 +239,12 @@
                             onclick="editar(${v.id})" title="Editar veículo">
                             <i class="bi bi-pencil"></i>
                         </button>
+
                         <button class="btn btn-sm btn-outline-warning me-1"
                             onclick="editarStatus(${v.id}, '${v.status}')" title="Alterar status">
                             <i class="bi bi-arrow-repeat"></i>
                         </button>
+
                         <button class="btn btn-sm btn-outline-danger"
                             onclick="deletar(${v.id})" title="Excluir veículo">
                             <i class="bi bi-trash"></i>
@@ -226,10 +255,14 @@
 
             const pag = document.getElementById('paginacao');
             pag.innerHTML = '';
+
             for (let i = 0; i < data.totalPages; i++) {
-                pag.innerHTML += `<button class="btn btn-sm ${i === page ? 'btn-success' : 'btn-outline-success'}"
-                    onclick="carregar(${i})">${i + 1}</button>`;
+                pag.innerHTML += `
+                    <button class="btn btn-sm ${i === page ? 'btn-success' : 'btn-outline-success'}"
+                        onclick="carregar(${i})">${i + 1}</button>
+                `;
             }
+
         } catch(e) {
             console.error('Erro ao carregar:', e);
         }
@@ -237,8 +270,10 @@
 
     function abrirModal() {
         limparErros();
+
         const erroModal = document.getElementById('erroModal');
         if (erroModal) erroModal.innerHTML = '';
+
         document.getElementById('veiculoId').value = '';
         document.getElementById('placa').value = '';
         document.getElementById('tipo').value = '';
@@ -246,14 +281,21 @@
         document.getElementById('chassi').value = '';
         document.getElementById('ano').value = 2020;
         document.getElementById('capacidadeKg').value = '';
+
         document.getElementById('marca').value = '';
         document.getElementById('tipoCaminhao').value = '';
         document.getElementById('numeroEixos').value = '';
         document.getElementById('quantidadeAssentos').value = '';
         document.getElementById('tipoReboque').value = '';
+
+        document.getElementById('status').value = 'DISPONIVEL';
+        document.getElementById('campoStatus').classList.add('d-none');
+
         document.getElementById('placa').readOnly = false;
         document.getElementById('chassi').readOnly = false;
+
         mostrarCampos();
+
         document.getElementById('modalTitulo').textContent = 'Novo Veículo';
         modal.show();
     }
@@ -261,7 +303,9 @@
     async function editar(id) {
         try {
             const v = await apiFetch('/veiculos/' + id);
+
             limparErros();
+
             const erroModal = document.getElementById('erroModal');
             if (erroModal) erroModal.innerHTML = '';
 
@@ -273,7 +317,16 @@
             document.getElementById('ano').value = v.ano || 2020;
             document.getElementById('capacidadeKg').value = v.capacidadeKg || '';
 
+            document.getElementById('campoStatus').classList.remove('d-none');
+            document.getElementById('status').value = v.status || 'DISPONIVEL';
+
             mostrarCampos();
+
+            document.getElementById('marca').value = '';
+            document.getElementById('tipoCaminhao').value = '';
+            document.getElementById('numeroEixos').value = '';
+            document.getElementById('quantidadeAssentos').value = '';
+            document.getElementById('tipoReboque').value = '';
 
             if (v.tipo === 'CAMINHAO') {
                 document.getElementById('marca').value = v.marca || '';
@@ -288,9 +341,12 @@
             }
 
             document.getElementById('modalTitulo').textContent = 'Editar Veículo #' + v.id;
+
             document.getElementById('placa').readOnly = true;
             document.getElementById('chassi').readOnly = true;
+
             modal.show();
+
         } catch(e) {
             alert('Erro ao carregar veículo: ' + e.message);
         }
@@ -298,7 +354,9 @@
 
     async function salvar() {
         limparErros();
+
         let valido = true;
+
         const obrigatorios = [
             { id: 'placa', msg: 'Informe a placa do veículo (Ex: ABC-1234)' },
             { id: 'tipo', msg: 'Selecione o tipo do veículo' },
@@ -309,24 +367,29 @@
         ];
 
         const id = document.getElementById('veiculoId').value;
-        // Na edição, placa e chassi são readOnly, não valida
-        const camposValidar = id ?
-            obrigatorios.filter(c => c.id !== 'placa' && c.id !== 'chassi') :
-            obrigatorios;
+
+        const camposValidar = id
+            ? obrigatorios.filter(c => c.id !== 'placa' && c.id !== 'chassi')
+            : obrigatorios;
 
         camposValidar.forEach(({ id: campoId, msg }) => {
             const el = document.getElementById(campoId);
+
             if (!el || !el.value || el.value.trim() === '') {
                 if (el) {
                     el.classList.add('is-invalid');
+
                     const div = document.createElement('div');
                     div.className = 'invalid-feedback';
                     div.textContent = msg;
+
                     el.parentNode.appendChild(div);
                 }
+
                 valido = false;
             }
         });
+
         if (!valido) return;
 
         const body = {
@@ -338,21 +401,38 @@
             capacidadeKg: parseInt(document.getElementById('capacidadeKg').value),
             marca: document.getElementById('marca').value || null,
             tipoCaminhao: document.getElementById('tipoCaminhao').value || null,
-            numeroEixos: document.getElementById('numeroEixos').value ?
-                parseInt(document.getElementById('numeroEixos').value) : null,
-            quantidadeAssentos: document.getElementById('quantidadeAssentos').value ?
-                parseInt(document.getElementById('quantidadeAssentos').value) : null,
+            numeroEixos: document.getElementById('numeroEixos').value
+                ? parseInt(document.getElementById('numeroEixos').value)
+                : null,
+            quantidadeAssentos: document.getElementById('quantidadeAssentos').value
+                ? parseInt(document.getElementById('quantidadeAssentos').value)
+                : null,
             tipoReboque: document.getElementById('tipoReboque').value || null
         };
 
         try {
             if (id) {
-                await apiFetch('/veiculos/' + id, { method: 'PUT', body: JSON.stringify(body) });
+                await apiFetch('/veiculos/' + id, {
+                    method: 'PUT',
+                    body: JSON.stringify(body)
+                });
+
+                const statusSelecionado = document.getElementById('status').value;
+
+                await apiFetch(`/veiculos/${id}/status?status=${statusSelecionado}`, {
+                    method: 'PATCH'
+                });
+
             } else {
-                await apiFetch('/veiculos', { method: 'POST', body: JSON.stringify(body) });
+                await apiFetch('/veiculos', {
+                    method: 'POST',
+                    body: JSON.stringify(body)
+                });
             }
+
             modal.hide();
             carregar(paginaAtual);
+
         } catch (e) {
             if (e.campos) {
                 mostrarErros(e.campos);
@@ -364,24 +444,41 @@
 
     async function editarStatus(id, statusAtual) {
         const msg = `Status atual: ${statusAtual}\n\nEscolha o novo status:\nDISPONIVEL — Disponível para viagens\nMANUTENCAO — Em manutenção\nINATIVO — Inativo no sistema`;
+
         const novo = prompt(msg, statusAtual);
+
         if (!novo || novo.toUpperCase() === statusAtual) return;
-        if (!['DISPONIVEL','MANUTENCAO','INATIVO'].includes(novo.toUpperCase())) {
+
+        if (!['DISPONIVEL', 'MANUTENCAO', 'INATIVO'].includes(novo.toUpperCase())) {
             alert('Status inválido! Use: DISPONIVEL, MANUTENCAO ou INATIVO');
             return;
         }
+
         try {
-            await apiFetch(`/veiculos/${id}/status?status=${novo.toUpperCase()}`, { method: 'PATCH' });
+            await apiFetch(`/veiculos/${id}/status?status=${novo.toUpperCase()}`, {
+                method: 'PATCH'
+            });
+
             carregar(paginaAtual);
-        } catch (e) { alert('Erro: ' + e.message); }
+
+        } catch (e) {
+            alert('Erro: ' + e.message);
+        }
     }
 
     async function deletar(id) {
         if (!confirm(`Excluir veículo #${id}?\n\nEsta ação não pode ser desfeita.`)) return;
+
         try {
-            await apiFetch('/veiculos/' + id, { method: 'DELETE' });
+            await apiFetch('/veiculos/' + id, {
+                method: 'DELETE'
+            });
+
             carregar(paginaAtual);
-        } catch (e) { alert('Erro ao excluir: ' + e.message); }
+
+        } catch (e) {
+            alert('Erro ao excluir: ' + e.message);
+        }
     }
 
     carregar();
