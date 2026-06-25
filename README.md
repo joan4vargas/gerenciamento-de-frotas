@@ -531,16 +531,6 @@ Token expira em: **24 horas**
 
 ---
 
-## 👥 Integrantes
-
-| Nome | Responsabilidade |
-|------|-----------------|
-| Integrante 1 | Backend — Entidades JPA, Repositories, Services, Segurança JWT |
-| Integrante 2 | Padrões GoF — Factory, Adapter GPS, Observer, Facade, Strategy |
-| Integrante 3 | Frontend — Dashboard, Mapa Leaflet/CARTO, Veículos, Motoristas |
-| Integrante 4 | Frontend — Rotas, Viagens, Relatórios PDF/Excel, Integração GPS |
----
-
 ## 📊 Banco de Dados
 
 **Tabelas geradas automaticamente pelo Hibernate:**
